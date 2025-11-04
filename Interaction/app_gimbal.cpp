@@ -36,28 +36,28 @@ void Gimbal::Init()
     motor_yaw_.CanSendEnter();
     osDelay(pdMS_TO_TICKS(1000));
 
-    motor_yaw_.SetKd(0.3); // MIT模式kd
-    motor_yaw_.SetControlTorque(0.1);
+    motor_yaw_.SetKd(0); // MIT模式kd
+    
     // 小Kp粗调
-    motor_yaw_.SetKp(1.0);  //MIT模式kp
-    motor_yaw_.SetControlAngle(1);
-    motor_yaw_.Output();
-    osDelay(pdMS_TO_TICKS(2000));
+    // motor_yaw_.SetKp(1.0);  //MIT模式kp
+    // motor_yaw_.SetControlAngle(0);
+    // motor_yaw_.Output();
+    // osDelay(pdMS_TO_TICKS(1000));
     // 大Kp细调
-    motor_yaw_.SetKp(40);  //MIT模式kp
-    motor_yaw_.SetControlAngle(1);
-    motor_yaw_.Output();
-    osDelay(pdMS_TO_TICKS(1000));
+    // motor_yaw_.SetKp(10.0);  //MIT模式kp
+    // motor_yaw_.SetControlAngle(1);
+    // motor_yaw_.Output();
+    // osDelay(pdMS_TO_TICKS(1000));
 
     // 速度控制
     motor_yaw_.SetKp(0);  //MIT模式kp
-    motor_yaw_.SetControlOmega(0);
+    motor_yaw_.SetControlTorque(0);
     motor_yaw_.Output();
 
     static const osThreadAttr_t kGimbalTaskAttr = 
     {
         .name = "gimbal_task",
-        .stack_size = 512,
+        .stack_size = 128 * 6,
         .priority = (osPriority_t) osPriorityNormal
     };
     // 启动任务，将 this 传入
@@ -82,6 +82,7 @@ void Gimbal::TaskEntry(void *argument)
 void Gimbal::SelfResolution()
 {
     now_yaw_angle_   = motor_yaw_.GetNowAngle();
+    now_yaw_omega_   = motor_yaw_.GetNowOmega();
     // printf("%f\n", now_yaw_angle_);
     // yaw_angle_pid_.SetNow(now_yaw_angle_);
     // yaw_angle_pid_.CalculatePeriodElapsedCallback();
@@ -108,7 +109,8 @@ void Gimbal::Output()
     //     target_yaw_omega_ = yaw_angle_pid_.GetOut();
     // }
 
-    motor_yaw_.SetControlOmega(target_yaw_omega_);
+    // motor_yaw_.SetControlOmega(target_yaw_omega_);
+    motor_yaw_.SetControlTorque(target_yaw_torque_);
     motor_yaw_.Output();
 }
 

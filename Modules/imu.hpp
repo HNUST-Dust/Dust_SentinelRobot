@@ -8,7 +8,8 @@
 #include "FreeRTOS.h"
 
 
-class Imu {
+class Imu 
+{
 private:
     // FreeRTOS 入口，静态函数
     static void TaskEntry(void *argument)
@@ -34,11 +35,16 @@ public:
         INS_Init(); // 逆时针为+ ，-180 ~ 180
         static const osThreadAttr_t ImuTaskAttr = {
             .name = "ImuTask",
-            .stack_size = 1024,
+            .stack_size = 2048,
             .priority = (osPriority_t) osPriorityNormal
         };
         // 启动任务，将 this 传入
         osThreadNew(TaskEntry, this, &ImuTaskAttr);
+    }
+
+    inline float GetYawAngle()
+    {
+        return INS.Yaw;
     }
 
     inline float GetYawAngleTotalAngle()

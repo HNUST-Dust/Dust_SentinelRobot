@@ -13,6 +13,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 
+#include "alg_pid.h"
 #include "bsp_dwt.h"
 #include "imu.hpp"
 
@@ -35,8 +36,15 @@ public:
     Chassis chassis_;
     // yaw角云台
     Gimbal gimbal_;
+    // 云台保持pid
+    Pid yaw_speed_pid_;
+    // 云台保持pid
+    Pid yaw_angle_pid_;
+    // 底盘跟随pid
+    Pid chassis_follow_pid_;
     // 底盘陀螺仪
     Imu imu_;
+
 
     void Init();
     void Task();

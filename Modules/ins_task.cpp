@@ -119,7 +119,7 @@ void INS_Task(void)
   {
     // 200hz
   }
-  printf("%f,%f,%f\n", INS.Yaw, INS.Pitch, INS.Roll);
+  // printf("%f,%f,%f\n", INS.Yaw, INS.Pitch, INS.Roll);
   count++;
 }
 

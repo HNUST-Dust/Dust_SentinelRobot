@@ -175,20 +175,22 @@ void McuComm::CanRxCpltCallback(uint8_t* rx_data)
           }
           case 0xAC: // 自瞄yaw包
           {
+               union { float f; uint8_t b[4]; } conv;
                mcu_autoaim_data_.start_of_yaw_frame = rx_data[0];
-               mcu_autoaim_data_.yaw[0]             = rx_data[1];
-               mcu_autoaim_data_.yaw[1]             = rx_data[2];
-               mcu_autoaim_data_.yaw[2]             = rx_data[3];
-               mcu_autoaim_data_.yaw[3]             = rx_data[4];
+               conv.b[0]                            = rx_data[1];
+               conv.b[1]                            = rx_data[2];
+               conv.b[2]                            = rx_data[3];
+               conv.b[3]                            = rx_data[4];
+               mcu_autoaim_data_.yaw_f = conv.f;
                break;
           }
           case 0xAD: // 自瞄pitch包
           {
-               mcu_autoaim_data_.start_of_yaw_frame = rx_data[0];
-               mcu_autoaim_data_.pitch[0]           = rx_data[1];
-               mcu_autoaim_data_.pitch[1]           = rx_data[2];
-               mcu_autoaim_data_.pitch[2]           = rx_data[3];
-               mcu_autoaim_data_.pitch[3]           = rx_data[4];
+               // mcu_autoaim_data_.start_of_yaw_frame = rx_data[0];
+               // mcu_autoaim_data_.pitch[0]           = rx_data[1];
+               // mcu_autoaim_data_.pitch[1]           = rx_data[2];
+               // mcu_autoaim_data_.pitch[2]           = rx_data[3];
+               // mcu_autoaim_data_.pitch[3]           = rx_data[4];
                break;
           }
           default:

@@ -37,22 +37,32 @@ public:
 
     void Init();
     void Task();
-    inline void SetTargetVelocityX(float target_velocity_x);
-    inline void SetTargetVelocityY(float target_velocity_y);
+    inline void SetNowYawAngleDiff(float now_yawdiff);
+
+    inline void SetTargetVxInGimbal(float target_velocity_x);
+    inline void SetTargetVyInGimbal(float target_velocity_y);
     inline void SetTargetVelocityRotation(float target_velocity_rotation);
+
     inline void SetTargetReloadRotation(float target_reload_rotation);
 protected:
-    // 目标速度X
-    float target_velocity_x_ = 0.0f;
-    // 目标速度Y
-    float target_velocity_y_ = 0.0f;
+    // 云台坐标系目标速度
+    float target_vx_in_gimbal_ = 0.0f;
+    float target_vy_in_gimbal_ = 0.0f;
+    // 底盘坐标系目标速度
+    float target_vx_in_chassis_ = 0.0f;
+    float target_vy_in_chassis_ = 0.0f;
     // 目标速度 旋转
     float target_velocity_rotation_ = 0.0f;
+    // 旋转矩阵参数
+    float now_yawdiff_ = 0.0f;
+    float cos_theta_ = 1.0f;
+    float sin_theta_ = 0.0f;
 
     // 目标装载速度 旋转
     float target_reload_rotation_ = 0.0f;
 
     void KinematicsInverseResolution();
+    void RotationMatrixTransform();
     void OutputToMotor();
     static void TaskEntry(void *param);  // FreeRTOS 入口，静态函数
 };
@@ -66,9 +76,9 @@ protected:
  *
  * @param target_velocity_x 目标速度X
  */
-inline void Chassis::SetTargetVelocityX(float target_velocity_x)
+inline void Chassis::SetTargetVxInGimbal(float target_vx_in_gimbal)
 {
-    target_velocity_x_ = target_velocity_x;
+    target_vx_in_gimbal_ = target_vx_in_gimbal;
 }
 
 /**
@@ -76,9 +86,9 @@ inline void Chassis::SetTargetVelocityX(float target_velocity_x)
  *
  * @param target_velocity_y 目标速度Y
  */
-inline void Chassis::SetTargetVelocityY(float target_velocity_y)
+inline void Chassis::SetTargetVyInGimbal(float target_vy_in_gimbal)
 {
-    target_velocity_y_ = target_velocity_y;
+    target_vy_in_gimbal_ = target_vy_in_gimbal;
 }
 
 /**
@@ -89,6 +99,16 @@ inline void Chassis::SetTargetVelocityY(float target_velocity_y)
 inline void Chassis::SetTargetVelocityRotation(float target_velocity_rotation)
 {
     target_velocity_rotation_ = target_velocity_rotation;
+}
+
+/**
+ * @brief 设定现在yaw角偏差
+ * 
+ * @param now_yawdiff 
+ */
+inline void Chassis::SetNowYawAngleDiff(float now_yawdiff)
+{
+    now_yawdiff_ = now_yawdiff;
 }
 
 /**

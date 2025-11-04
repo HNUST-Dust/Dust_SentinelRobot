@@ -40,8 +40,6 @@ public:
     // DM4310电机
     MotorDmNormal motor_yaw_;
 
-    Pid yaw_angle_pid_;
-
     void Init();
 
     void Task();
@@ -58,6 +56,8 @@ public:
 
     inline void SetTargetYawOmega(float target_yaw_omega);
 
+    inline void SetTargetYawTorque(float target_yaw_torque);
+
 protected:
     // 内部变量
 
@@ -68,6 +68,9 @@ protected:
 
     // yaw轴当前角速度
     float now_yaw_omega_ = 0.0f;
+
+    // yaw轴当前力矩
+    float now_yaw_torque_ = 0.0f;
 
     // 写变量
 
@@ -80,6 +83,9 @@ protected:
 
     // yaw轴目标角速度
     float target_yaw_omega_ = 0.0f;
+
+    // yaw轴目标力矩
+    float target_yaw_torque_ = 0.0f;
 
     void SelfResolution();
     void MotorNearestTransposition();
@@ -149,6 +155,16 @@ inline void Gimbal::SetTargetYawAngle(float target_yaw_angle)
 inline void Gimbal::SetTargetYawOmega(float target_yaw_omega)
 {
     target_yaw_omega_ = target_yaw_omega;
+}
+
+/**
+ * @brief 设定yaw轴角速度
+ *
+ * @param target_yaw_omega yaw轴角速度
+ */
+inline void Gimbal::SetTargetYawTorque(float target_yaw_torque)
+{
+    target_yaw_torque_ = target_yaw_torque;
 }
 
 #endif
