@@ -117,7 +117,7 @@ void usb_tx_callback(uint16_t len)
 void Init()
 {
     // 上位机通讯
-    // usb_init(usb_tx_callback, usb_rx_callback);
+    usb_init(usb_tx_callback, usb_rx_callback);
     // 下板通讯
     can_init(&hcan1, can1_callback_function);
     // 摩擦轮 pitch角电机

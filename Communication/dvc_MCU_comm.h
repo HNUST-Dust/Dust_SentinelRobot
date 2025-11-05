@@ -37,9 +37,7 @@ struct McuAutoaimData
 {
     uint8_t start_of_yaw_frame;
     uint8_t start_of_pitch_frame;
-    uint8_t yaw[4];
     float yaw_f;
-    uint8_t pitch[4];
     float pitch_f;
 };
 
@@ -62,21 +60,20 @@ public:
             3
     };
 
-    McuAutoaimData mcu_autoaim_data_ = {0xAC,
+    volatile McuAutoaimData mcu_autoaim_data_ = {0xAC,
                                         0xAD,
-                                        {0},
                                         0,
-                                        {0},
                                         0,
                                         };
     void Init(CAN_HandleTypeDef *hcan,
               uint8_t can_rx_id,
-              uint8_t can_tx_id
-              );
+              uint8_t can_tx_id);
 
     void CanRxCpltCallback(uint8_t *rx_data);
 
     void CanSendCommand();
+    void CanSendAutoaim();
+    void CanSendNull();
 
     void Task();
 

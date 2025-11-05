@@ -11,6 +11,7 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include "Robot.h"
+#include "bsp_usb.h"
 
 /* Private macros ------------------------------------------------------------*/
 
@@ -28,17 +29,18 @@
  */
 void Robot::Init()
 {
-    dwt_init(168);
-    // 遥控初始化
-    remote_dr16_.Init(&huart3, uart3_callback_function, UART_BUFFER_LENGTH);
+    // 上位机通讯
+    pc_comm_.Init();
     // 上下板通讯组件初始化
     mcu_comm_.Init(&hcan1, 0x00, 0x01);
+    // 等待云台yaw角回正
+    osDelay(pdMS_TO_TICKS(5000));
     // 底盘陀螺仪初始化
     imu_.Init();
     // 10s时间等待陀螺仪收敛
-    osDelay(pdMS_TO_TICKS(10000));
-    // 上位机通讯
-    // pc_comm_.Init();
+
+    // 遥控初始化
+    remote_dr16_.Init(&huart3, uart3_callback_function, UART_BUFFER_LENGTH);
     // 云台初始化
     gimbal_.Init();
     // 摩擦轮初始化
@@ -97,6 +99,7 @@ void Robot::Task()
                 break;
             }
         }
+        mcu_comm_.CanSendAutoaim();
         osDelay(pdMS_TO_TICKS(10));
     }
 }

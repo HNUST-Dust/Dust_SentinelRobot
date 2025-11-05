@@ -12,6 +12,7 @@
 
 #include "dvc_MCU_comm.h"
 #include "dvc_motor_dm.h"
+#include "ins_task.h"
 
 /* Private macros ------------------------------------------------------------*/
 
@@ -48,7 +49,7 @@ void McuComm::Init(CAN_HandleTypeDef* hcan, uint8_t can_rx_id, uint8_t can_tx_id
           .priority = (osPriority_t) osPriorityNormal
      };
      // 启动任务，将 this 传入
-     osThreadNew(McuComm::TaskEntry, this, &kMcuCommTaskAttr);
+     // osThreadNew(McuComm::TaskEntry, this, &kMcuCommTaskAttr);
 }
 
 /**
@@ -73,6 +74,9 @@ void McuComm::Task()
           // __disable_irq();
           // mcu_comm_data__Local = *const_cast<const struct McuCommData*>(&(mcu_comm_data_));
           // __enable_irq();
+          
+          // 将遥控器数据发给下板
+          // CanSendCommand();
           // osDelay(pdMS_TO_TICKS(10));
      }
 }
@@ -84,7 +88,6 @@ void McuComm::Task()
 void McuComm::CanSendCommand()
 {
      static uint8_t can_tx_frame[8];
-     union { float f; uint8_t b[4]; } conv;
 
      // 第一帧发送底盘数据
      can_tx_frame[0] = mcu_chassis_data_.start_of_frame;
@@ -97,7 +100,6 @@ void McuComm::CanSendCommand()
      can_tx_frame[7] = mcu_chassis_data_.chassis_spin;
      can_send_data(can_manage_object_->can_handler, can_tx_id_, can_tx_frame, 8);
 
-     conv.f = mcu_comm_data_.yaw;
      // 第二帧发送拨弹盘，yaw角数据
      can_tx_frame[0] = mcu_comm_data_.start_of_frame;
      can_tx_frame[1] = mcu_comm_data_.armor;
@@ -105,6 +107,39 @@ void McuComm::CanSendCommand()
      can_tx_frame[3] = mcu_comm_data_.yaw;
      can_tx_frame[4] = mcu_comm_data_.supercap;
      can_tx_frame[5] = mcu_comm_data_.switch_r;
+     can_tx_frame[6] = 0x00;
+     can_tx_frame[7] = 0x00;
+     can_send_data(can_manage_object_->can_handler, can_tx_id_, can_tx_frame, 8);
+}
+
+void McuComm::CanSendAutoaim()
+{
+     static uint8_t can_tx_frame[8];
+     union { float f; uint8_t b[4]; } conv;
+     conv.f = INS.YawTotalAngle;
+
+     // 第一帧发送yaw包
+     can_tx_frame[0] = mcu_autoaim_data_.start_of_yaw_frame;
+     can_tx_frame[1] = conv.b[0];
+     can_tx_frame[2] = conv.b[1];
+     can_tx_frame[3] = conv.b[2];
+     can_tx_frame[4] = conv.b[3];
+     can_tx_frame[5] = 0x00;
+     can_tx_frame[6] = 0x00;
+     can_tx_frame[7] = 0x00;
+     can_send_data(can_manage_object_->can_handler, can_tx_id_, can_tx_frame, 8);
+}
+
+void McuComm::CanSendNull()
+{
+     static uint8_t can_tx_frame[8];
+
+     can_tx_frame[0] = 0x00;
+     can_tx_frame[1] = 0x00;
+     can_tx_frame[2] = 0x00;
+     can_tx_frame[3] = 0x00;
+     can_tx_frame[4] = 0x00;
+     can_tx_frame[5] = 0x00;
      can_tx_frame[6] = 0x00;
      can_tx_frame[7] = 0x00;
      can_send_data(can_manage_object_->can_handler, can_tx_id_, can_tx_frame, 8);
