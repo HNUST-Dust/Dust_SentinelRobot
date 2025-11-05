@@ -219,4 +219,91 @@ float math_int_to_float(int32_t x, int32_t int_min, int32_t int_max, float float
     return (out);
 }
 
+// 返回值范围: -π ~ π 获取相对于上电时候的角度
+float get_relative_angle_pm_pi(float now_angle_cum, float zero_angle)
+{
+    float rel = fmodf(now_angle_cum - zero_angle, 2.0f * M_PI); // [-2π, 2π)
+    if (rel > M_PI)
+        rel -= 2.0f * M_PI;
+    else if (rel < -M_PI)
+        rel += 2.0f * M_PI;
+    return rel;
+}
+
+float normalize_angle_diff(float target, float now)
+{
+    float error = target - now;
+    if (error > M_PI)
+        error -= 2.0f * M_PI;
+    else if (error < -M_PI)
+        error += 2.0f * M_PI;
+    return error;
+}
+/**
+ * @brief 计算云台yaw轴角度误差（考虑跨零与跨π情况）
+ * @param target 目标角度（单位：rad，范围 -π~π）
+ * @param now 当前角度（单位：rad，范围 -π~π）
+ * @return 劣弧方向的角度误差（范围 -π~π）
+ */
+float CalcYawError(float target, float now)
+{
+    float err = target - now;
+
+    // 角度归一化到 (-π, π]
+    while (err > PI)  err -= 2.0f * PI;
+    while (err < -PI) err += 2.0f * PI;
+
+    return err;
+}
+
+float CalcYawErrorAngle(float target, float now)
+{
+    float err = target - now;
+
+    while(err > 180.f) err -= 360.f;
+    while(err < -180.f) err += 360.f;
+    
+    return err;
+}
+
+/**
+ * @brief 角度值归一到弧度
+ * 
+ * @param angle 目标角度
+ * @return float 目标弧度
+ */
+float normalize_angle_pm_pi(float angle)
+{
+    float m = fmod(angle, 2.0f * M_PI);
+    if (m > M_PI){
+        m -= 2.0f * M_PI;
+    }else if(m < -M_PI){
+        m += 2.0f * M_PI;
+    }
+    return m;
+};
+
+/**
+ * @brief 归一角度
+ * 
+ * @param angle 目标角度
+ * @return float 目标归一角度 -180.f ~ 180.f
+ */
+float normalize_angle(float angle)
+{
+    angle = fmodf(angle, 360.f);
+
+    // 将 180° ~ 360° 的范围转换为 -180° ~ 0°
+    if (angle > 180.0f) {
+        angle -= 360.0f;
+    }
+    // 将 -360° ~ -180° 的范围转换为 0° ~ 180°  
+    else if (angle < -180.0f) 
+    {
+        angle += 360.0f;
+    }
+
+    return angle;
+}
+
 /************************ COPYRIGHT(C) HNUST-DUST **************************/

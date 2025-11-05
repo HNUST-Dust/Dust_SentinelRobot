@@ -194,7 +194,21 @@ void McuComm::CanRxCpltCallback(uint8_t* rx_data)
                break;
           }
           default:
+          {
+               mcu_chassis_data_.chassis_speed_x      =     1024;
+               mcu_chassis_data_.chassis_speed_y      =     1024;
+               mcu_chassis_data_.chassis_rotation     =     1024;
+               mcu_chassis_data_.chassis_spin         =     CHASSIS_SPIN_DISABLE;
+
+               mcu_comm_data_.armor                   =     0;
+               mcu_comm_data_.yaw                     =     0;
+               mcu_comm_data_.supercap                =     0;
+               mcu_comm_data_.switch_r                =     Switch_MID;
+
+               mcu_autoaim_data_.yaw_f                =     0;
                break;
+          }
+               
      }
 
 }

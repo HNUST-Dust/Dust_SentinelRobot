@@ -12,6 +12,7 @@
 
 #include "app_gimbal.h"
 #include "cmsis_os2.h"
+#include "projdefs.h"
 #include "stdio.h"
 
 /* Private macros ------------------------------------------------------------*/
@@ -28,29 +29,66 @@
  */
 void Gimbal::Init()
 {
+    // yaw角角度环pid
+    yaw_angle_pid_.Init
+    (
+        0.47f,
+        0.002f,
+        0.00075f,
+        0.0f,
+        0.f,
+        15.0f,
+        0.001f,
+        0.0f,
+        0.0f,
+        0.0f,
+        0.0f  
+    );
+    // yaw角速度环pid
+    yaw_speed_pid_.Init
+    (
+        0.725f,
+        0.0002f,
+        0.0f,
+        0.0f,
+        0.0f,
+        10.f,
+        0.001f,
+        0.0f,
+        0.0f,
+        0.0f,
+        0.0f  
+    );
     // 4310电机初始化
     motor_yaw_.Init(&hcan1, 0x06, 0x06);
 
+    // 发送清除错误指令
     motor_yaw_.CanSendClearError();
     osDelay(pdMS_TO_TICKS(1000));
+    
+    // 保存零点（当云台与底盘上电有偏差时需重新设置零点）
+    // motor_yaw_.CanSendSaveZero();
+    // osDelay(pdMS_TO_TICKS(1000));
+    // 发送使能命令
     motor_yaw_.CanSendEnter();
     osDelay(pdMS_TO_TICKS(1000));
 
-    motor_yaw_.SetKd(0); // MIT模式kd
-    
     // 小Kp粗调
-    // motor_yaw_.SetKp(1.0);  //MIT模式kp
-    // motor_yaw_.SetControlAngle(0);
-    // motor_yaw_.Output();
-    // osDelay(pdMS_TO_TICKS(1000));
+    motor_yaw_.SetKp(0.8);    // MIT模式kp
+    motor_yaw_.SetKd(0.3);    // MIT模式kd
+    motor_yaw_.SetControlAngle(0);
+    motor_yaw_.Output();
+    osDelay(pdMS_TO_TICKS(1300));
     // 大Kp细调
-    // motor_yaw_.SetKp(10.0);  //MIT模式kp
-    // motor_yaw_.SetControlAngle(1);
-    // motor_yaw_.Output();
-    // osDelay(pdMS_TO_TICKS(1000));
+    motor_yaw_.SetKp(10.0);    // MIT模式kp
+    motor_yaw_.SetKd(1.0);    // MIT模式kd
+    motor_yaw_.SetControlAngle(0);
+    motor_yaw_.Output();
+    osDelay(pdMS_TO_TICKS(500));
 
-    // 速度控制
-    motor_yaw_.SetKp(0);  //MIT模式kp
+    // 力矩控制
+    motor_yaw_.SetKp(0);  // MIT模式kp
+    motor_yaw_.SetKd(0);  // MIT模式kd
     motor_yaw_.SetControlTorque(0);
     motor_yaw_.Output();
 
@@ -81,7 +119,7 @@ void Gimbal::TaskEntry(void *argument)
  */
 void Gimbal::SelfResolution()
 {
-    now_yaw_angle_   = motor_yaw_.GetNowAngle();
+    // now_yaw_angle_   = motor_yaw_.GetNowAngle();
     now_yaw_omega_   = motor_yaw_.GetNowOmega();
     // printf("%f\n", now_yaw_angle_);
     // yaw_angle_pid_.SetNow(now_yaw_angle_);

@@ -26,14 +26,21 @@
  */
 void Chassis::Init()
 {
-    // 2006电机初始化（拨弹盘电机）
-    motor_reload_1_.pid_omega_.Init(1.0f, 0.0f, 0.0f);
-
-    motor_reload_1_.Init(&hcan1, MOTOR_DJI_ID_0x205, MOTOR_DJI_CONTROL_METHOD_OMEGA);
-    
-    motor_reload_1_.SetTargetOmega(0.0f);
-
-    // 3508电机初始化（底盘电机）
+    // 底盘跟随pid
+    chassis_follow_pid_.Init(
+        0.2f,
+        0.00f,
+        0.001f,
+        0.0f,
+        0.0f,
+        5.0f,
+        0.001f,
+        0.0f,
+        0.0f,
+        0.0f,
+        0.0f  
+    );
+    // 底盘3508电机初始化
     motor_chassis_1_.pid_omega_.Init(1.5f,0.2f,0.0f);
     motor_chassis_2_.pid_omega_.Init(1.5f,0.2f,0.0f);
     motor_chassis_3_.pid_omega_.Init(1.5f,0.2f,0.0f);
@@ -118,13 +125,11 @@ void Chassis::Task()
 {
     for (;;)
     {
-        // 设置拨弹速度
-        motor_reload_1_ .SetTargetOmega( target_reload_rotation_);
-        motor_reload_1_ .CalculatePeriodElapsedCallback();
-        can_send_data(&hcan1, 0x1FF, g_can1_0x1ff_tx_data, 2);
-
+        // 旋转矩阵转换
         RotationMatrixTransform();
+        // 运动学解析
         KinematicsInverseResolution();
+        // 输出
         OutputToMotor();
 
         osDelay(pdMS_TO_TICKS(10));

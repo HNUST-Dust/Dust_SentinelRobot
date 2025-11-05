@@ -39,6 +39,10 @@ class Gimbal
 public:
     // DM4310电机
     MotorDmNormal motor_yaw_;
+    // 云台保持pid
+    Pid yaw_speed_pid_;
+    // 云台保持pid
+    Pid yaw_angle_pid_;
 
     void Init();
 
@@ -48,9 +52,13 @@ public:
 
     inline float GetNowYawOmega();
 
+    inline float GetNowYawTorque();
+
     inline float GetTargetYawAngle();
 
     inline float GetTargetYawOmega();
+
+    inline float GetTargetYawTorque();
 
     inline void SetTargetYawAngle(float target_yaw_angle);
 
@@ -88,8 +96,11 @@ protected:
     float target_yaw_torque_ = 0.0f;
 
     void SelfResolution();
+    
     void MotorNearestTransposition();
+
     void Output();
+    
     static void TaskEntry(void *param);  // FreeRTOS 入口，静态函数
 };
 
@@ -118,6 +129,16 @@ inline float Gimbal::GetNowYawOmega()
 }
 
 /**
+ * @brief 获取yaw轴当前力矩
+ * 
+ * @return float yaw轴当前力矩
+ */
+inline float Gimbal::GetNowYawTorque()
+{
+    return (now_yaw_torque_);
+}
+
+/**
  * @brief 获取yaw轴目标角度
  *
  * @return float yaw轴目标角度
@@ -135,6 +156,16 @@ inline float Gimbal::GetTargetYawAngle()
 inline float Gimbal::GetTargetYawOmega()
 {
     return (target_yaw_omega_);
+}
+
+/**
+ * @brief 获取yaw轴目标力矩
+ *
+ * @return float yaw轴目标力矩
+ */
+inline float Gimbal::GetTargetYawTorque()
+{
+    return (target_yaw_torque_);
 }
 
 /**
@@ -160,7 +191,7 @@ inline void Gimbal::SetTargetYawOmega(float target_yaw_omega)
 /**
  * @brief 设定yaw轴角速度
  *
- * @param target_yaw_omega yaw轴角速度
+ * @param target_yaw_torque yaw轴角速度
  */
 inline void Gimbal::SetTargetYawTorque(float target_yaw_torque)
 {

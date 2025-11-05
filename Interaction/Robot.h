@@ -13,13 +13,18 @@
 
 /* Includes ------------------------------------------------------------------*/
 
+// alg
 #include "alg_pid.h"
+#include "alg_math.h"
+// bsp
+#include "stdio.h"
 #include "bsp_dwt.h"
-#include "imu.hpp"
-
+// dvc
 #include "dvc_MCU_comm.h"
 #include "dvc_PC_comm.h"
-
+#include "imu.hpp"
+// app
+#include "app_reload.h"
 #include "app_gimbal.h"
 #include "app_chassis.h"
 
@@ -36,17 +41,13 @@ public:
     Chassis chassis_;
     // yaw角云台
     Gimbal gimbal_;
-    // 云台保持pid
-    Pid yaw_speed_pid_;
-    // 云台保持pid
-    Pid yaw_angle_pid_;
-    // 底盘跟随pid
-    Pid chassis_follow_pid_;
+    // 拨弹盘
+    Reload reload_;
     // 底盘陀螺仪
     Imu imu_;
 
-
     void Init();
+
     void Task();
     
 protected:

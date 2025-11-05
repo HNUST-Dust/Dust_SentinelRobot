@@ -35,42 +35,16 @@ void Robot::Init()
     dwt_init(168);
     // 上下板通讯组件初始化
     mcu_comm_.Init(&hcan1, 0x01, 0x00);
-    // yaw角角度环pid
-    yaw_angle_pid_.Init(
-        0.47f,
-        0.002f,
-        0.00075f,
-        0.0f,
-        0.f,
-        15.0f,
-        0.001f,
-        0.0f,
-        0.0f,
-        0.0f,
-        0.0f  
-    );
-    // yaw角速度环pid
-    yaw_speed_pid_.Init(
-        0.725f,
-        0.0002f,
-        0.0f,
-        0.0f,
-        0.0f,
-        10.f,
-        0.001f,
-        0.0f,
-        0.0f,
-        0.0f,
-        0.0f  
-    );
     // 云台初始化
     gimbal_.Init();
     // 底盘陀螺仪初始化
     imu_.Init();
     // 10s时间等待陀螺仪收敛
-    // osDelay(pdMS_TO_TICKS(7 * 1000));
+    osDelay(pdMS_TO_TICKS(10 * 1000));
     // 摩擦轮初始化
     chassis_.Init();
+    // 拨弹盘初始化
+    reload_.Init();
 
     static const osThreadAttr_t kRobotTaskAttr = 
     {
@@ -115,9 +89,15 @@ void Robot::Task()
     mcu_autoaim_data_local.yaw_f               = 0;
 
     float yaw_remote_angle = 0.0f;
+    float yaw_angle_diff = 0.0f;
+    float chassis_yaw_angle_diff = 0.0f;
+    float chassis_angle_diff = 0.0f;
 
     for(;;)
     {
+        //***************************   数据   ***************************//
+
+
         // 用临界区一次性复制，避免撕裂
         __disable_irq();
         mcu_chassis_data_local = *const_cast<const McuChassisData*>(&(mcu_comm_.mcu_chassis_data_));
@@ -125,25 +105,42 @@ void Robot::Task()
         mcu_autoaim_data_local = *const_cast<const McuAutoaimData*>(&(mcu_comm_.mcu_autoaim_data_));
         __enable_irq();
 
-        //***************************   云台   ***************************//
+
+        /****************************   云台   ****************************/
+
+
+        // 遥控器累加绝对精准yaw轴角度
         yaw_remote_angle += (mcu_comm_data_local.yaw * K + C) * 1.0;
+        // 角度环
+        yaw_angle_diff = CalcYawErrorAngle(normalize_angle(mcu_autoaim_data_local.yaw_f), normalize_angle(yaw_remote_angle));
+        gimbal_.yaw_angle_pid_.SetTarget(0);
+        gimbal_.yaw_angle_pid_.SetNow(yaw_angle_diff);
+        gimbal_.yaw_angle_pid_.CalculatePeriodElapsedCallback();
+        // 速度环
+        gimbal_.yaw_speed_pid_.SetTarget(gimbal_.yaw_angle_pid_.GetOut());
+        gimbal_.yaw_speed_pid_.SetNow(gimbal_.GetNowYawOmega());
+        gimbal_.yaw_speed_pid_.CalculatePeriodElapsedCallback();
+        // 发送力矩
+        gimbal_.SetTargetYawTorque(gimbal_.yaw_speed_pid_.GetOut());
+        // printf("%f,%f\n", yaw_diff, gimbal_.yaw_speed_pid_.GetOut());
 
-        yaw_angle_pid_.SetTarget(yaw_remote_angle);
-        yaw_angle_pid_.SetNow(mcu_autoaim_data_local.yaw_f);
-        yaw_angle_pid_.CalculatePeriodElapsedCallback();
 
-        yaw_speed_pid_.SetTarget(yaw_angle_pid_.GetOut());
-        yaw_speed_pid_.SetNow(gimbal_.GetNowYawOmega());
-        yaw_speed_pid_.CalculatePeriodElapsedCallback();
-        gimbal_.SetTargetYawTorque(yaw_speed_pid_.GetOut());
+        /****************************   底盘   ****************************/
 
-        //***************************   底盘   ***************************//
 
-        chassis_.SetNowYawAngleDiff(yaw_remote_angle - imu_.GetYawAngleTotalAngle());
-
+        // 计算云台底盘角度差
+        chassis_yaw_angle_diff = yaw_remote_angle - imu_.GetYawAngleTotalAngle();
+        // 设置当前角度差
+        chassis_.SetNowYawAngleDiff(chassis_yaw_angle_diff);
+        // 设置目标映射速度
         chassis_.SetTargetVxInGimbal((mcu_chassis_data_local.chassis_speed_x * K + C) * MAX_OMEGA_SPEED);
         chassis_.SetTargetVyInGimbal((mcu_chassis_data_local.chassis_speed_y * K + C) * MAX_OMEGA_SPEED);
 
+
+        /****************************   模式   ****************************/
+
+
+        // 左按钮
         switch (mcu_chassis_data_local.chassis_spin) 
         {
             case CHASSIS_SPIN_CLOCKWISE:
@@ -158,39 +155,53 @@ void Robot::Task()
             }
             case CHASSIS_SPIN_COUNTER_CLOCK_WISE:
             {
-                chassis_.SetTargetVelocityRotation((mcu_chassis_data_local.chassis_rotation * K + C) * MAX_OMEGA_SPEED);
+                chassis_angle_diff = CalcYawErrorAngle(normalize_angle(yaw_remote_angle) ,normalize_angle(imu_.GetYawAngleTotalAngle()));
+
+                chassis_.chassis_follow_pid_.SetTarget(0);
+                chassis_.chassis_follow_pid_.SetNow(chassis_angle_diff);
+                chassis_.chassis_follow_pid_.CalculatePeriodElapsedCallback();
+
+                chassis_.SetTargetVelocityRotation(chassis_.chassis_follow_pid_.GetOut());
+
+                // printf("%f,%f,%f\n", normalize_angle(yaw_remote_angle), normalize_angle(imu_.GetYawAngleTotalAngle()), chassis_.chassis_follow_pid_.GetOut());
                 break;
             }
             default:
             {
-                chassis_.SetTargetVelocityRotation((mcu_chassis_data_local.chassis_rotation * K + C) * MAX_OMEGA_SPEED);
+                chassis_.SetTargetVelocityRotation(0);
                 gimbal_.SetTargetYawOmega(0);
                 break;
             }
         }
+        
+        // 右按钮
         switch (mcu_comm_data_local.switch_r)
         {
             case Switch_UP:
             {
-                chassis_.SetTargetReloadRotation(MAX_RELOAD_SPEED);
+                reload_.SetTargetReloadRotation(MAX_RELOAD_SPEED);
                 break;
             }
             case Switch_MID:
             {
-                chassis_.SetTargetReloadRotation(0);
+                reload_.SetTargetReloadRotation(0);
                 break;
             }
             case Switch_DOWN:
             {
-                chassis_.SetTargetReloadRotation(-MAX_RELOAD_SPEED / 4);
+                reload_.SetTargetReloadRotation(-MAX_RELOAD_SPEED / 2);
                 break;
             }
             default:
             {
-                chassis_.SetTargetReloadRotation(0);
+                reload_.SetTargetReloadRotation(0);
                 break;
             }
         }
+        
+        //***************************   调试   ***************************//
+        printf("%f\n", mcu_autoaim_data_local.yaw_f);
+
         osDelay(pdMS_TO_TICKS(1));
     }
 }
