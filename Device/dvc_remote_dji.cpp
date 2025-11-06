@@ -15,11 +15,6 @@
 
 /* Private macros ------------------------------------------------------------*/
 
-#define MaxVelocity     10
-#define MaxOmega        10
-#define MaxReload       15
-#define MaxShoot        10
-
 /* Private types -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
@@ -57,13 +52,11 @@ void RemoteDjiDR16::DataProcess(uint8_t* buffer)
     data.s2 = ((buffer[5] >> 4) & 0x0003);
 
     // 上板数据
-    // output.shoot_speed = (k_nor * data.ch0 + c_nor) * MaxShoot;
-    output.gimbal_pitch = k_pitch * data.ch3 - c_pitch;
+    output.gimbal_pitch = k_pitch * data.ch3 + c_pitch;
     
     // 下板数据
     output.chassis_x  = data.ch0;
     output.chassis_y  = data.ch1;
-    output.chassis_r  = data.ch2;
     output.gimbal_yaw = data.ch2;
 
     // 通用数据

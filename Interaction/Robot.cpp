@@ -15,7 +15,7 @@
 
 /* Private macros ------------------------------------------------------------*/
 
-#define MAX_SHOOT_SPEED     50.f
+#define MAX_SHOOT_SPEED             50.f
 
 /* Private types -------------------------------------------------------------*/
 
@@ -31,6 +31,8 @@ void Robot::Init()
 {
     // 上位机通讯
     pc_comm_.Init();
+    // 遥控初始化
+    remote_dr16_.Init(&huart3, uart3_callback_function, UART_BUFFER_LENGTH);
     // 上下板通讯组件初始化
     mcu_comm_.Init(&hcan1, 0x00, 0x01);
     // 等待云台yaw角回正
@@ -39,8 +41,6 @@ void Robot::Init()
     imu_.Init();
     // 10s时间等待陀螺仪收敛
 
-    // 遥控初始化
-    remote_dr16_.Init(&huart3, uart3_callback_function, UART_BUFFER_LENGTH);
     // 云台初始化
     gimbal_.Init();
     // 摩擦轮初始化
@@ -76,10 +76,21 @@ void Robot::Task()
     for(;;)
     {
         // 将遥控器数据发给下板
+
+        mcu_comm_.CanSendChassis();
         mcu_comm_.CanSendCommand();
-        // 设置pitch角
-        gimbal_.SetTargetPitchAngle(remote_dr16_.output.gimbal_pitch);
-        // printf("%f\n", imu_.GetYawAngleTotalAngle());
+
+        gimbal_.pitch_angle_pid_.SetTarget(remote_dr16_.output.gimbal_pitch);
+        gimbal_.pitch_angle_pid_.SetNow(gimbal_.GetNowPitchAngle());
+        gimbal_.pitch_angle_pid_.CalculatePeriodElapsedCallback();
+        
+        gimbal_.pitch_speed_pid_.SetTarget(gimbal_.pitch_angle_pid_.GetOut());
+        gimbal_.pitch_speed_pid_.SetNow(gimbal_.motor_pitch_.GetNowOmega());
+        gimbal_.pitch_speed_pid_.CalculatePeriodElapsedCallback();
+
+        gimbal_.SetTargetPitchTorque(gimbal_.pitch_speed_pid_.GetOut());
+        // printf("%f,%f,%f\n", remote_dr16_.output.gimbal_pitch, gimbal_.GetNowPitchAngle(), gimbal_.pitch_speed_pid_.GetOut());
+
         // 摩擦轮转速
         switch (mcu_comm_.mcu_comm_data_.switch_r)
         {
@@ -99,8 +110,8 @@ void Robot::Task()
                 break;
             }
         }
-        mcu_comm_.CanSendAutoaim();
-        osDelay(pdMS_TO_TICKS(10));
+
+        osDelay(pdMS_TO_TICKS(1));
     }
 }
 

@@ -37,40 +37,34 @@ enum GimbalControlType
 class Gimbal
 {
 public:
-    // 2个DM6220，作为云台Yaw和Pitch轴控制电机
-    MotorDmNormal motor_yaw_;
+    // DM4310电机
     MotorDmNormal motor_pitch_;
-
-    Pid yaw_angle_pid_;
-
+    // pitch角速度环
+    Pid pitch_speed_pid_;
+    // pitch角位置环
+    Pid pitch_angle_pid_;
 
     void Init();
 
     void Task();
 
-    inline float GetNowYawAngle();
-
     inline float GetNowPitchAngle();
-
-    inline float GetNowYawOmega();
 
     inline float GetNowPitchOmega();
 
-    inline float GetTargetYawAngle();
+    inline float GetNowPitchTorque();
 
     inline float GetTargetPitchAngle();
 
-    inline float GetTargetYawOmega();
-
     inline float GetTargetPitchOmega();
 
-    inline void SetTargetYawAngle(float target_yaw_angle);
+    inline float GetTargetPitchTorque();
 
     inline void SetTargetPitchAngle(float target_pitch_angle);
 
-    inline void SetTargetYawOmega(float target_yaw_omega);
-
     inline void SetTargetPitchOmega(float target_pitch_omega);
+
+    inline void SetTargetPitchTorque(float target_pitch_torque);
 
 protected:
     // pitch轴最小值
@@ -82,15 +76,14 @@ protected:
 
     // 读变量
 
-    // yaw轴当前角度
-    float now_yaw_angle_ = 0.0f;
     // pitch轴当前角度
     float now_pitch_angle_ = 0.0f;
 
-    // yaw轴当前角速度
-    float now_yaw_omega_ = 0.0f;
     // pitch轴当前角速度
     float now_pitch_omega_ = 0.0f;
+
+    // pitch轴当前力矩
+    float now_pitch_torque_ = 0.0f;
 
     // 写变量
 
@@ -98,35 +91,27 @@ protected:
     GimbalControlType gimbal_control_type_ = GIMBAL_CONTROL_TYPE_MANUAL;
     // 读写变量
 
-    // yaw轴目标角度
-    float target_yaw_angle_ = 0.0f;
     // pitch轴目标角度
     float target_pitch_angle_ = 0.0f;
 
-    // yaw轴目标角速度
-    float target_yaw_omega_ = 0.0f;
     // pitch轴目标角速度
     float target_pitch_omega_ = 0.0f;
 
+    // pitch轴目标力矩
+    float target_pitch_torque_ = 0.0f;
+
     void SelfResolution();
+
     void MotorNearestTransposition();
+
     void Output();
+
     static void TaskEntry(void *param);  // FreeRTOS 入口，静态函数
 };
 
 /* Exported variables --------------------------------------------------------*/
 
 /* Exported function declarations ---------------------------------------------*/
-
-/**
- * @brief 获取yaw轴当前角度
- *
- * @return float yaw轴当前角度
- */
-inline float Gimbal::GetNowYawAngle()
-{
-    return (now_yaw_angle_);
-}
 
 /**
  * @brief 获取pitch轴当前角度
@@ -136,16 +121,6 @@ inline float Gimbal::GetNowYawAngle()
 inline float Gimbal::GetNowPitchAngle()
 {
     return (now_pitch_angle_);
-}
-
-/**
- * @brief 获取yaw轴当前角速度
- *
- * @return float yaw轴当前角速度
- */
-inline float Gimbal::GetNowYawOmega()
-{
-    return (now_yaw_omega_);
 }
 
 /**
@@ -159,13 +134,13 @@ inline float Gimbal::GetNowPitchOmega()
 }
 
 /**
- * @brief 获取yaw轴目标角度
+ * @brief 获取pitch轴当前力矩
  *
- * @return float yaw轴目标角度
+ * @return float pitch轴当前力矩
  */
-inline float Gimbal::GetTargetYawAngle()
+inline float Gimbal::GetNowPitchTorque()
 {
-    return (target_yaw_angle_);
+    return (now_pitch_torque_);
 }
 
 /**
@@ -179,16 +154,6 @@ inline float Gimbal::GetTargetPitchAngle()
 }
 
 /**
- * @brief 获取yaw轴目标角速度
- *
- * @return float yaw轴目标角速度
- */
-inline float Gimbal::GetTargetYawOmega()
-{
-    return (target_yaw_omega_);
-}
-
-/**
  * @brief 获取pitch轴目标角速度
  *
  * @return float pitch轴目标角速度
@@ -199,13 +164,13 @@ inline float Gimbal::GetTargetPitchOmega()
 }
 
 /**
- * @brief 设定yaw轴角度
+ * @brief 获取pitch轴目标力矩
  *
- * @param target_yaw_angle yaw轴角度
+ * @return float pitch轴目标力矩
  */
-inline void Gimbal::SetTargetYawAngle(float target_yaw_angle)
+inline float Gimbal::GetTargetPitchTorque()
 {
-    target_yaw_angle_ = target_yaw_angle;
+    return (target_pitch_torque_);
 }
 
 /**
@@ -219,16 +184,6 @@ inline void Gimbal::SetTargetPitchAngle(float target_pitch_angle)
 }
 
 /**
- * @brief 设定yaw轴角速度
- *
- * @param target_yaw_omega yaw轴角速度
- */
-inline void Gimbal::SetTargetYawOmega(float target_yaw_omega)
-{
-    target_yaw_omega_ = target_yaw_omega;
-}
-
-/**
  * @brief 设定pitch轴角速度
  *
  * @param target_pitch_omega pitch轴角速度
@@ -236,6 +191,16 @@ inline void Gimbal::SetTargetYawOmega(float target_yaw_omega)
 inline void Gimbal::SetTargetPitchOmega(float target_pitch_omega)
 {
     target_pitch_omega_ = target_pitch_omega;
+}
+
+/**
+ * @brief 设定pitch轴力矩
+ *
+ * @param target_pitch_torque pitch轴力矩
+ */
+inline void Gimbal::SetTargetPitchTorque(float target_pitch_torque)
+{
+    target_pitch_torque_ = target_pitch_torque;
 }
 
 
