@@ -11,9 +11,15 @@
 #ifndef __APP_RELOAD_H__
 #define __APP_RELOAD_H__
 
+/* Includes ------------------------------------------------------------------*/
+
 #include "dvc_motor_dji.h"
 #include "FreeRTOS.h"
 #include "cmsis_os2.h"
+
+/* Exported macros -----------------------------------------------------------*/
+
+/* Exported types ------------------------------------------------------------*/
 
 class Reload
 {
@@ -33,6 +39,9 @@ protected:
     static void TaskEntry(void *param);  // FreeRTOS 入口，静态函数
 };
 
+/* Exported variables --------------------------------------------------------*/
+
+/* Exported function declarations ---------------------------------------------*/
 
 /**
  * @brief 设定目标装载速度旋转

@@ -20,22 +20,21 @@
 
 CanManageObject g_can1_manage_object = {0};
 CanManageObject g_can2_manage_object = {0};
-CanManageObject g_can3_manage_object = {0};
 
 // CAN通信发送缓冲区
-uint8_t g_can1_0x1ff_tx_data[8];
-uint8_t g_can1_0x200_tx_data[8];
-uint8_t g_can1_0x2ff_tx_data[8];
-uint8_t g_can1_0x3fe_tx_data[8];
-uint8_t g_can1_0x4fe_tx_data[8];
+uint8_t g_can1_0x1ff_tx_data[8] = {0};
+uint8_t g_can1_0x200_tx_data[8] = {0};
+uint8_t g_can1_0x2ff_tx_data[8] = {0};
+uint8_t g_can1_0x3fe_tx_data[8] = {0};
+uint8_t g_can1_0x4fe_tx_data[8] = {0};
 
-uint8_t g_can2_0x1ff_tx_data[8];
-uint8_t g_can2_0x200_tx_data[8];
-uint8_t g_can2_0x2ff_tx_data[8];
-uint8_t g_can2_0x3fe_tx_data[8];
-uint8_t g_can2_0x4fe_tx_data[8];
+uint8_t g_can2_0x1ff_tx_data[8] = {0};
+uint8_t g_can2_0x200_tx_data[8] = {0};
+uint8_t g_can2_0x2ff_tx_data[8] = {0};
+uint8_t g_can2_0x3fe_tx_data[8] = {0};
+uint8_t g_can2_0x4fe_tx_data[8] = {0};
 
-uint8_t g_can_supercap_tx_data[8];
+uint8_t g_can_supercap_tx_data[8] = {0};
 
 /* Private function declarations ---------------------------------------------*/
 

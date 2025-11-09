@@ -51,7 +51,7 @@ public:
 protected:
     // 云台坐标系目标速度
     float target_vx_in_gimbal_ = 0.0f;
-
+    
     float target_vy_in_gimbal_ = 0.0f;
 
     // 底盘坐标系目标速度

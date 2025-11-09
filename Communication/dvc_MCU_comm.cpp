@@ -67,7 +67,6 @@ void McuComm::TaskEntry(void *argument) {
  */
 void McuComm::Task()
 {
-     struct McuCommData mcu_comm_data_local;
      for (;;)
      {    // 用临界区一次性复制，避免撕裂
           // __disable_irq();
@@ -83,36 +82,7 @@ void McuComm::Task()
  */
 void McuComm::CanSendCommand()
 {
-     // static uint8_t can_tx_frame[8];
-     // can_tx_frame[0] = mcu_send_data_.start_of_frame;
-     // can_tx_frame[1] = mcu_send_data_.armor;
-     // // 把 float 转换成字节
-     // union { float f; uint8_t b[4]; } conv;
-
-     // conv.f = mcu_send_data_.yaw;
-     // can_tx_frame[2] = conv.b[0];
-     // can_tx_frame[3] = conv.b[1];
-     // can_tx_frame[4] = conv.b[2];
-     // can_tx_frame[5] = conv.b[3];
-     // can_tx_frame[6] = 0x00;
-     // can_tx_frame[7] = 0x00;
-
-     // // 发送第一帧（8字节）
-     // can_send_data(can_manage_object_->can_handler, can_tx_id_, can_tx_frame, 8);
-
-     // // ---- 第2帧：pitch 的 4 个字节 ----
-     // conv.f = mcu_send_data_.pitch;
-     // can_tx_frame[0] = conv.b[0];
-     // can_tx_frame[1] = conv.b[1];
-     // can_tx_frame[2] = conv.b[2];
-     // can_tx_frame[3] = conv.b[3];
-     // can_tx_frame[4] = 0xBA;
-     // can_tx_frame[5] = 0x00;
-     // can_tx_frame[6] = 0x00;
-     // can_tx_frame[7] = 0x00;
-
-     // // 发送第二帧（8字节）
-     // can_send_data(can_manage_object_->can_handler, can_tx_id_, can_tx_frame, 8);
+     
 }
 
 /**
@@ -127,88 +97,74 @@ void McuComm::CanRxCpltCallback(uint8_t* rx_data)
      // 处理数据 , 解包
      switch (rx_data[0])
      {
-          case 0xAA: // 底盘包
+          case (0xAA): // 底盘包
           {
-               mcu_chassis_data_.start_of_frame       = rx_data[0];
-               mcu_chassis_data_.chassis_speed_x      = rx_data[1] << 8 | rx_data[2];
-               mcu_chassis_data_.chassis_speed_y      = rx_data[3] << 8 | rx_data[4];
-               mcu_chassis_data_.chassis_rotation     = rx_data[5] << 8 | rx_data[6];
+               recv_chassis_data_.start_of_frame       = rx_data[0];
+               recv_chassis_data_.chassis_speed_x      = rx_data[1] << 8 | rx_data[2];
+               recv_chassis_data_.chassis_speed_y      = rx_data[3] << 8 | rx_data[4];
+               recv_chassis_data_.rotation             = rx_data[5] << 8 | rx_data[6];
+
                switch(rx_data[7])
                {
                     case 1:
-                    mcu_chassis_data_.chassis_spin = CHASSIS_SPIN_CLOCKWISE;
+                    recv_chassis_data_.switch_l = CHASSIS_SPIN_CLOCKWISE;
                     break;
                     case 3:
-                    mcu_chassis_data_.chassis_spin = CHASSIS_SPIN_DISABLE;
+                    recv_chassis_data_.switch_l = CHASSIS_SPIN_DISABLE;
                     break;
                     case 2:
-                    mcu_chassis_data_.chassis_spin = CHASSIS_SPIN_COUNTER_CLOCK_WISE;
+                    recv_chassis_data_.switch_l = CHASSIS_SPIN_COUNTER_CLOCK_WISE;
                     break;
                     default:
-                    mcu_chassis_data_.chassis_spin = CHASSIS_SPIN_DISABLE;
+                    recv_chassis_data_.switch_l = CHASSIS_SPIN_DISABLE;
                     break;
                }
+               
                break;
           }
-          case 0xAB: // 拨弹盘，yaw角包
-          {
-               mcu_comm_data_.start_of_frame       = rx_data[0];
-               mcu_comm_data_.armor                = rx_data[1];
-               mcu_comm_data_.yaw                  = rx_data[2] << 8 | rx_data[3];
-               mcu_comm_data_.supercap             = rx_data[4];
-               switch(rx_data[5])
-               {
-                    case 1:
-                    mcu_comm_data_.switch_r = Switch_UP;
-                    break;
-                    case 3:
-                    mcu_comm_data_.switch_r = Switch_MID;
-                    break;
-                    case 2:
-                    mcu_comm_data_.switch_r = Switch_DOWN;
-                    break;
-                    default:
-                    mcu_comm_data_.switch_r = Switch_MID;
-                    break;
-               }
-               break;
-          }
-          case 0xAC: // 自瞄yaw包
+          case (0xAB): // 拨弹盘，yaw角包
           {
                union { float f; uint8_t b[4]; } conv;
-               mcu_autoaim_data_.start_of_yaw_frame = rx_data[0];
-               conv.b[0]                            = rx_data[1];
-               conv.b[1]                            = rx_data[2];
-               conv.b[2]                            = rx_data[3];
-               conv.b[3]                            = rx_data[4];
-               mcu_autoaim_data_.yaw_f = conv.f;
-               break;
-          }
-          case 0xAD: // 自瞄pitch包
-          {
-               // mcu_autoaim_data_.start_of_yaw_frame = rx_data[0];
-               // mcu_autoaim_data_.pitch[0]           = rx_data[1];
-               // mcu_autoaim_data_.pitch[1]           = rx_data[2];
-               // mcu_autoaim_data_.pitch[2]           = rx_data[3];
-               // mcu_autoaim_data_.pitch[3]           = rx_data[4];
-               break;
-          }
-          default:
-          {
-               mcu_chassis_data_.chassis_speed_x      =     1024;
-               mcu_chassis_data_.chassis_speed_y      =     1024;
-               mcu_chassis_data_.chassis_rotation     =     1024;
-               mcu_chassis_data_.chassis_spin         =     CHASSIS_SPIN_DISABLE;
 
-               mcu_comm_data_.armor                   =     0;
-               mcu_comm_data_.yaw                     =     0;
-               mcu_comm_data_.supercap                =     0;
-               mcu_comm_data_.switch_r                =     Switch_MID;
+               recv_comm_data_.start_of_frame       = rx_data[0];
+               recv_comm_data_.armor                = rx_data[1];
+               recv_comm_data_.supercap             = rx_data[2];
 
-               mcu_autoaim_data_.yaw_f                =     0;
+               switch(rx_data[3])
+               {
+                    case 1:
+                    recv_comm_data_.switch_r = Switch_UP;
+                    break;
+                    case 3:
+                    recv_comm_data_.switch_r = Switch_MID;
+                    break;
+                    case 2:
+                    recv_comm_data_.switch_r = Switch_DOWN;
+                    break;
+                    default:
+                    recv_comm_data_.switch_r = Switch_MID;
+                    break;
+               }
+
+               conv.b[0]                           = rx_data[4];
+               conv.b[1]                           = rx_data[5];
+               conv.b[2]                           = rx_data[6];
+               conv.b[3]                           = rx_data[7];
+               recv_comm_data_.yaw_angle = conv.f;
+
                break;
           }
-               
+          case (0xAC): // 自瞄yaw包
+          {
+               recv_autoaim_data_.start_of_yaw_frame = rx_data[0];
+
+               recv_autoaim_data_.autoaim_yaw[0]     = rx_data[1];
+               recv_autoaim_data_.autoaim_yaw[1]     = rx_data[2];
+               recv_autoaim_data_.autoaim_yaw[2]     = rx_data[3];
+               recv_autoaim_data_.autoaim_yaw[3]     = rx_data[4];
+
+               break;
+          }
      }
 
 }

@@ -11,6 +11,7 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include "app_chassis.h"
+#include "stdio.h"
 
 /* Private macros ------------------------------------------------------------*/
 
@@ -28,13 +29,13 @@ void Chassis::Init()
 {
     // 底盘跟随pid
     chassis_follow_pid_.Init(
-        0.2f,
-        0.00f,
-        0.001f,
+        0.3f,
+        0.01f,
+        0.002f,
         0.0f,
         0.0f,
-        5.0f,
-        0.001f,
+        30.0f,
+        0.005f,
         0.0f,
         0.0f,
         0.0f,
@@ -59,7 +60,7 @@ void Chassis::Init()
     static const osThreadAttr_t kChassisTaskAttr = 
     {
         .name = "chassis_task",
-        .stack_size = 512,
+        .stack_size = 128 * 4,
         .priority = (osPriority_t) osPriorityNormal
     };
     // 启动任务，将 this 传入

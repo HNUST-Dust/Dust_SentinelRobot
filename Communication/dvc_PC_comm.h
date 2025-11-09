@@ -1,8 +1,24 @@
+/**
+ * @file dvc_PC_comm.h
+ * @author qingyu
+ * @brief 
+ * @version 0.1
+ * @date 2025-11-07
+ * 
+ * @copyright Copyright (c) 2025
+ * 
+ */
 #ifndef PC_COMM_H
 #define PC_COMM_H
 
+/* Includes ------------------------------------------------------------------*/
+
 #include "bsp_usb.h"
 #include "cmsis_os2.h"
+
+/* Exported macros -----------------------------------------------------------*/
+
+/* Exported types ------------------------------------------------------------*/
 
 struct PC_Send_Data
 {
@@ -34,6 +50,8 @@ private:
 
 };
 
+/* Exported variables --------------------------------------------------------*/
 
+/* Exported function declarations ---------------------------------------------*/
 
 #endif //PC_COMM_H

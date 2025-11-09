@@ -39,9 +39,11 @@ class Gimbal
 public:
     // DM4310电机
     MotorDmNormal motor_yaw_;
-    // 云台保持pid
+    
+    // yaw角速度环
     Pid yaw_speed_pid_;
-    // 云台保持pid
+
+    // yaw角位置环
     Pid yaw_angle_pid_;
 
     void Init();

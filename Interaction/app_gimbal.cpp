@@ -38,7 +38,7 @@ void Gimbal::Init()
         0.0f,
         0.f,
         15.0f,
-        0.001f,
+        0.005f,
         0.0f,
         0.0f,
         0.0f,
@@ -53,7 +53,7 @@ void Gimbal::Init()
         0.0f,
         0.0f,
         10.f,
-        0.001f,
+        0.005f,
         0.0f,
         0.0f,
         0.0f,
@@ -119,15 +119,8 @@ void Gimbal::TaskEntry(void *argument)
  */
 void Gimbal::SelfResolution()
 {
-    // now_yaw_angle_   = motor_yaw_.GetNowAngle();
     now_yaw_omega_   = motor_yaw_.GetNowOmega();
-    // printf("%f\n", now_yaw_angle_);
-    // yaw_angle_pid_.SetNow(now_yaw_angle_);
-    // yaw_angle_pid_.CalculatePeriodElapsedCallback();
-    // target_yaw_omega_ = yaw_angle_pid_.GetOut();
-
-    // // pitch轴角度归化到±PI / 2之间
-    // now_pitch_angle_ = Math_Modulus_Normalization(-motor_pitch_.GetNowAngle(), 2.0f * PI);
+    now_yaw_angle_ = motor_yaw_.GetControlAngle();
 }
 
 /**
@@ -136,18 +129,6 @@ void Gimbal::SelfResolution()
  */
 void Gimbal::Output()
 {
-    // // 云台位控
-    // if (gimbal_control_type_ == GIMBAL_CONTROL_TYPE_MANUAL)         // 无自瞄介入
-    // {
-    //     // do nothing
-    // }else if (gimbal_control_type_ == GIMBAL_CONTROL_TYPE_AUTOAIM){ // 有自瞄矫正
-    //     MotorNearestTransposition();
-    //     yaw_angle_pid_.SetTarget(now_yaw_angle_); // 加视觉的相对偏移量
-    //     yaw_angle_pid_.CalculatePeriodElapsedCallback();
-    //     target_yaw_omega_ = yaw_angle_pid_.GetOut();
-    // }
-
-    // motor_yaw_.SetControlOmega(target_yaw_omega_);
     motor_yaw_.SetControlTorque(target_yaw_torque_);
     motor_yaw_.Output();
 }
