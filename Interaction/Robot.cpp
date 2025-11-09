@@ -11,6 +11,7 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include "Robot.h"
+#include "alg_math.h"
 #include "bsp_usb.h"
 
 /* Private macros ------------------------------------------------------------*/
@@ -75,24 +76,38 @@ void Robot::Task()
 {
     for(;;)
     {
-        // 将遥控器数据发给下板
+        /****************************   通讯   ****************************/
 
+
+        // 发送下板数据
         mcu_comm_.CanSendChassis();
         mcu_comm_.CanSendCommand();
 
+
+        /****************************   云台   ****************************/
+
+
+        // 角度环
         gimbal_.pitch_angle_pid_.SetTarget(remote_dr16_.output.gimbal_pitch);
         gimbal_.pitch_angle_pid_.SetNow(gimbal_.GetNowPitchAngle());
         gimbal_.pitch_angle_pid_.CalculatePeriodElapsedCallback();
-        
+
+        // 速度环
         gimbal_.pitch_speed_pid_.SetTarget(gimbal_.pitch_angle_pid_.GetOut());
         gimbal_.pitch_speed_pid_.SetNow(gimbal_.motor_pitch_.GetNowOmega());
         gimbal_.pitch_speed_pid_.CalculatePeriodElapsedCallback();
 
+        // 发送力矩
         gimbal_.SetTargetPitchTorque(gimbal_.pitch_speed_pid_.GetOut());
         // printf("%f,%f,%f\n", remote_dr16_.output.gimbal_pitch, gimbal_.GetNowPitchAngle(), gimbal_.pitch_speed_pid_.GetOut());
+        // printf("%f,%f\n", imu_.GetRollAngle() * PI / 180.f, imu_.GetRollAngle());
 
-        // 摩擦轮转速
-        switch (mcu_comm_.mcu_comm_data_.switch_r)
+
+        /****************************   模式   ****************************/
+
+
+        // 右按钮
+        switch (mcu_comm_.send_comm_data_.switch_r)
         {
             case Switch_UP:
             {
@@ -111,7 +126,19 @@ void Robot::Task()
             }
         }
 
-        osDelay(pdMS_TO_TICKS(1));
+
+        /****************************   调试   ****************************/
+
+
+        pc_comm_.send_autoaim_data.armor = 0x00;
+        // pc_comm_.send_autoaim_data.yaw   =  0.f;
+        // pc_comm_.send_autoaim_data.pitch =  -0.25f;
+        pc_comm_.Send_Message();
+
+        memcpy(mcu_comm_.send_autoaim_data_.autoaim_yaw, pc_comm_.recv_autoaim_data.yaw, 4);
+        mcu_comm_.CanSendAutoaim();
+
+        osDelay(pdMS_TO_TICKS(5));
     }
 }
 

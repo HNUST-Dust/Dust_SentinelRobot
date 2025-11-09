@@ -20,7 +20,6 @@
 
 CanManageObject g_can1_manage_object = {0};
 CanManageObject g_can2_manage_object = {0};
-CanManageObject g_can3_manage_object = {0};
 
 // CAN通信发送缓冲区
 uint8_t g_can1_0x1ff_tx_data[8];

@@ -11,16 +11,22 @@
 #ifndef MODULES_COMM_DVC_MCU_COMM_H
 #define MODULES_COMM_DVC_MCU_COMM_H
 
+/* Includes ------------------------------------------------------------------*/
+
 #include "bsp_can.h"
 #include "FreeRTOS.h"
 #include "cmsis_os2.h"
+
+/* Exported macros -----------------------------------------------------------*/
+
+/* Exported types ------------------------------------------------------------*/
 
 struct McuChassisData
 {
     uint8_t          start_of_frame = 0xAA;     // 帧头
     uint16_t         chassis_speed_x;           // 平移方向：左、右
     uint16_t         chassis_speed_y;           // 平移方向：前、后
-    uint16_t         yaw_rotation;              // 选装方向：不转、顺时针转、逆时针转
+    uint16_t         rotation;                  // 旋转方向：不转、顺时针转、逆时针转
     uint8_t          switch_l;                  // 小陀螺：不转、顺时针转、逆时针转
 };
 
@@ -30,54 +36,67 @@ struct McuCommData
     uint8_t         armor;                      // 自瞄
     uint8_t         supercap;                   // 超级电容：充电、放电
     uint8_t         switch_r;
-    float           yaw_angle;                  // yaw轴角度
+    float           yaw_angle;               // yaw轴角度
 };
 
 struct McuAutoaimData
 {
-    uint8_t start_of_yaw_frame;
-    uint8_t start_of_pitch_frame;
-    float yaw_f;
-    float pitch_f;
+    uint8_t start_of_yaw_frame = 0xAC;
+    uint8_t start_of_pitch_frame = 0xAD;
+    uint8_t autoaim_yaw[4];
+    uint8_t autoaim_pitch[4];
 };
 
 class McuComm
 {
 public:
 
-    volatile McuChassisData mcu_chassis_data_ = {
-            0xAA,
-            1024,
-            1024,
-            1024,
-            3,
+    McuChassisData send_chassis_data_ = 
+    {
+        0xAA,
+        1024,
+        1024,
+        1024,
+        3,
     };
-    volatile McuCommData mcu_comm_data_ = {
-            0xAB,
-            0,
-            0,
-            3,
-            0
+    McuCommData send_comm_data_ = 
+    {
+        0xAB,
+        0,
+        0,
+        3,
+        0,
     };
 
-    volatile McuAutoaimData mcu_autoaim_data_ = {0xAC,
-                                        0xAD,
-                                        0,
-                                        0,
-                                        };
+    McuAutoaimData send_autoaim_data_ = 
+    {   0xAC,
+        0xAD,
+        0,
+        0,
+    };
+
+    McuCommData recv_comm_data_ = 
+    {
+        0xAB,
+        0,
+        0,
+        3,
+        0,
+    };
+
     void Init(CAN_HandleTypeDef *hcan,
               uint8_t can_rx_id,
               uint8_t can_tx_id);
 
-    void CanRxCpltCallback(uint8_t *rx_data);
-
-    void CanSendChassis();
-    void CanSendCommand();
-    void CanSendAutoaim();
-    void CanSendNull();
-
     void Task();
 
+    void CanSendChassis();
+
+    void CanSendCommand();
+    
+    void CanSendAutoaim();
+
+    void CanRxCpltCallback(uint8_t *rx_data);
 
 protected:
     // 绑定的CAN
@@ -94,4 +113,8 @@ protected:
     static void TaskEntry(void *param);
 };
 
-#endif //MODULES_COMM_DVC_MCU_COMM_H
+/* Exported variables --------------------------------------------------------*/
+
+/* Exported function declarations --------------------------------------------*/
+
+#endif

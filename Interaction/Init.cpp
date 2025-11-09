@@ -34,7 +34,7 @@ void can1_callback_function(CanRxBuffer *CAN_RxMessage)
     {
         case (0x00):
         {
-            // robot_.mcu_comm_.CanRxCpltCallback(CAN_RxMessage->data);
+            robot_.mcu_comm_.CanRxCpltCallback(CAN_RxMessage->data);
             break;
         }
     }
@@ -79,16 +79,16 @@ void uart3_callback_function(uint8_t* buffer, uint16_t length)
 {	
 	robot_.remote_dr16_.DataProcess(buffer);
 
-    robot_.mcu_comm_.mcu_chassis_data_.start_of_frame   = 0xAA;
-    robot_.mcu_comm_.mcu_chassis_data_.chassis_speed_x  = robot_.remote_dr16_.output.chassis_x;
-    robot_.mcu_comm_.mcu_chassis_data_.chassis_speed_y  = robot_.remote_dr16_.output.chassis_y;
-    robot_.mcu_comm_.mcu_chassis_data_.yaw_rotation     = robot_.remote_dr16_.output.gimbal_yaw;
-    robot_.mcu_comm_.mcu_chassis_data_.switch_l         = robot_.remote_dr16_.output.SwitchL;
+    robot_.mcu_comm_.send_chassis_data_.start_of_frame   = 0xAA;
+    robot_.mcu_comm_.send_chassis_data_.chassis_speed_x  = robot_.remote_dr16_.output.chassis_x;
+    robot_.mcu_comm_.send_chassis_data_.chassis_speed_y  = robot_.remote_dr16_.output.chassis_y;
+    robot_.mcu_comm_.send_chassis_data_.rotation         = robot_.remote_dr16_.output.rotation;
+    robot_.mcu_comm_.send_chassis_data_.switch_l         = robot_.remote_dr16_.output.SwitchL;
 
-    robot_.mcu_comm_.mcu_comm_data_.start_of_frame      = 0xAB;
-    robot_.mcu_comm_.mcu_comm_data_.armor               = 0;
-    robot_.mcu_comm_.mcu_comm_data_.supercap            = 0;
-    robot_.mcu_comm_.mcu_comm_data_.switch_r            = robot_.remote_dr16_.output.SwitchR;
+    robot_.mcu_comm_.send_comm_data_.start_of_frame      = 0xAB;
+    robot_.mcu_comm_.send_comm_data_.armor               = 0x00;
+    robot_.mcu_comm_.send_comm_data_.supercap            = 0;
+    robot_.mcu_comm_.send_comm_data_.switch_r            = robot_.remote_dr16_.output.SwitchR;
 }
 
 /**
@@ -108,7 +108,7 @@ void usb_rx_callback(uint16_t len)
  */
 void usb_tx_callback(uint16_t len)
 {
-
+    
 }
 
 /* Function prototypes -------------------------------------------------------*/

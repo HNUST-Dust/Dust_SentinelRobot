@@ -48,9 +48,8 @@ struct RemoteOutput
 {
     uint8_t SwitchL, SwitchR;
     float chassis_x, chassis_y;      // x, y, r 采用右手系
-    float shoot_speed;
-    float gimbal_pitch;                         
-    float gimbal_yaw;                           
+    float rotation;
+    float gimbal_pitch;       
 };
 
 /**

@@ -41,10 +41,19 @@ public:
         osThreadNew(TaskEntry, this, &ImuTaskAttr);
     }
 
+    inline float GetRollAngle()
+    {
+        return INS.Roll;
+    }
+    inline float GetPitchAngle()
+    {
+        return INS.Pitch;
+    }
     inline float GetYawAngleTotalAngle()
     {
         return INS.YawTotalAngle;
     }
+    
 };
 
 #endif /* IMU_H_ */

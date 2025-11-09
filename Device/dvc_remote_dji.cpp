@@ -57,7 +57,7 @@ void RemoteDjiDR16::DataProcess(uint8_t* buffer)
     // 下板数据
     output.chassis_x  = data.ch0;
     output.chassis_y  = data.ch1;
-    output.gimbal_yaw = data.ch2;
+    output.rotation   = data.ch2;
 
     // 通用数据
     output.SwitchL = data.s1;
