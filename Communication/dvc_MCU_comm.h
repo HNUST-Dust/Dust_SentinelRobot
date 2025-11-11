@@ -90,6 +90,8 @@ public:
 
     void Task();
 
+    void DisconnectData();
+
     void CanSendChassis();
 
     void CanSendCommand();

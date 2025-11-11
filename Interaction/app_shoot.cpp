@@ -38,7 +38,7 @@ void Shoot::Init()
     static const osThreadAttr_t kShootTaskAttr = 
     {
         .name = "shoot_task",
-        .stack_size = 512,
+        .stack_size = 256,
         .priority = (osPriority_t) osPriorityNormal
     };
     // 启动任务，将 this 传入

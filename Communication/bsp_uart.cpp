@@ -17,9 +17,12 @@
 
 /* Private variables ---------------------------------------------------------*/
 
-Uart_Instance uart1_instance = {0};
-Uart_Instance uart3_instance = {0};
-Uart_Instance uart6_instance = {0};
+UartManageObject uart1_manage_object = {0};
+UartManageObject uart2_manage_object = {0};
+UartManageObject uart3_manage_object = {0};
+UartManageObject uart4_manage_object = {0};
+UartManageObject uart5_manage_object = {0};
+UartManageObject uart6_manage_object = {0};
 
 /* Private function declarations ---------------------------------------------*/
 
@@ -45,34 +48,108 @@ int _write(int file, char *ptr, int len)
 /* function prototypes -------------------------------------------------------*/
 
 /**
- * @brief ：UART初始化函数
+ * @brief UART初始化函数
  * 
- * @param huart ：句柄
- * @param callback_function ：回调函数
- * @param rx_buffer_length ：接收缓冲区长度
+ * @param huart 句柄
+ * @param callback_function 回调函数
+ * @param rx_buffer_length 接收缓冲区长度
  */
 void uart_init(UART_HandleTypeDef* huart, Uart_Callback callback_function, uint16_t rx_buffer_length)
 {
 	if(huart->Instance == USART1)
 	{
-		uart1_instance.uart_handle = huart;
-		uart1_instance.callback_function = callback_function;
-		uart1_instance.rx_buffer_length = rx_buffer_length;
-		HAL_UARTEx_ReceiveToIdle_DMA(uart1_instance.uart_handle, uart1_instance.rx_buffer, uart1_instance.rx_buffer_length);
+		uart1_manage_object.uart_handle = huart;
+		uart1_manage_object.callback_function = callback_function;
+		uart1_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UARTEx_ReceiveToIdle_DMA(uart1_manage_object.uart_handle, uart1_manage_object.rx_buffer, uart1_manage_object.rx_buffer_length);
 	}
-	if(huart->Instance == USART3)
+	else if(huart->Instance == USART2)
 	{
-		uart3_instance.uart_handle = huart;
-		uart3_instance.callback_function = callback_function;
-		uart3_instance.rx_buffer_length = rx_buffer_length;
-		HAL_UARTEx_ReceiveToIdle_DMA(uart3_instance.uart_handle, uart3_instance.rx_buffer, uart3_instance.rx_buffer_length);
+		uart2_manage_object.uart_handle = huart;
+		uart2_manage_object.callback_function = callback_function;
+		uart2_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UARTEx_ReceiveToIdle_DMA(uart2_manage_object.uart_handle, uart2_manage_object.rx_buffer, uart2_manage_object.rx_buffer_length);
 	}
-	if(huart->Instance == USART6)
+	else if(huart->Instance == USART3)
 	{
-		uart6_instance.uart_handle = huart;
-		uart6_instance.callback_function = callback_function;
-		uart6_instance.rx_buffer_length = rx_buffer_length;
-		HAL_UARTEx_ReceiveToIdle_DMA(uart6_instance.uart_handle, uart6_instance.rx_buffer, uart6_instance.rx_buffer_length);
+		uart3_manage_object.uart_handle = huart;
+		uart3_manage_object.callback_function = callback_function;
+		uart3_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UARTEx_ReceiveToIdle_DMA(uart3_manage_object.uart_handle, uart3_manage_object.rx_buffer, uart3_manage_object.rx_buffer_length);
+	}
+	else if(huart->Instance == UART4)
+	{
+		uart4_manage_object.uart_handle = huart;
+		uart4_manage_object.callback_function = callback_function;
+		uart4_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UARTEx_ReceiveToIdle_DMA(uart4_manage_object.uart_handle, uart4_manage_object.rx_buffer, uart4_manage_object.rx_buffer_length);
+	}
+	else if(huart->Instance == UART5)
+	{
+		uart5_manage_object.uart_handle = huart;
+		uart5_manage_object.callback_function = callback_function;
+		uart5_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UARTEx_ReceiveToIdle_DMA(uart5_manage_object.uart_handle, uart5_manage_object.rx_buffer, uart5_manage_object.rx_buffer_length);
+	}
+	else if(huart->Instance == USART6)
+	{
+		uart6_manage_object.uart_handle = huart;
+		uart6_manage_object.callback_function = callback_function;
+		uart6_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UARTEx_ReceiveToIdle_DMA(uart6_manage_object.uart_handle, uart6_manage_object.rx_buffer, uart6_manage_object.rx_buffer_length);
+	}
+}
+
+/**
+ * @brief UART再初始化
+ * 
+ * @param huart 句柄
+ * @param callback_function 回调函数
+ * @param rx_buffer_length 接收缓冲区长度
+ */
+void uart_reinit(UART_HandleTypeDef* huart, Uart_Callback callback_function, uint16_t rx_buffer_length)
+{
+	if(huart->Instance == USART1)
+	{
+		uart1_manage_object.uart_handle = huart;
+		uart1_manage_object.callback_function = callback_function;
+		uart1_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UARTEx_ReceiveToIdle_DMA(uart1_manage_object.uart_handle, uart1_manage_object.rx_buffer, uart1_manage_object.rx_buffer_length);
+	}
+	else if(huart->Instance == USART2)
+	{
+		uart2_manage_object.uart_handle = huart;
+		uart2_manage_object.callback_function = callback_function;
+		uart2_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UARTEx_ReceiveToIdle_DMA(uart2_manage_object.uart_handle, uart2_manage_object.rx_buffer, uart2_manage_object.rx_buffer_length);
+	}
+	else if(huart->Instance == USART3)
+	{
+		uart3_manage_object.uart_handle = huart;
+		uart3_manage_object.callback_function = callback_function;
+		uart3_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UARTEx_ReceiveToIdle_DMA(uart3_manage_object.uart_handle, uart3_manage_object.rx_buffer, uart3_manage_object.rx_buffer_length);
+	}
+	else if(huart->Instance == UART4)
+	{
+		uart4_manage_object.uart_handle = huart;
+		uart4_manage_object.callback_function = callback_function;
+		uart4_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UARTEx_ReceiveToIdle_DMA(uart4_manage_object.uart_handle, uart4_manage_object.rx_buffer, uart4_manage_object.rx_buffer_length);
+	}
+	else if(huart->Instance == UART5)
+	{
+		uart5_manage_object.uart_handle = huart;
+		uart5_manage_object.callback_function = callback_function;
+		uart5_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UARTEx_ReceiveToIdle_DMA(uart5_manage_object.uart_handle, uart5_manage_object.rx_buffer, uart5_manage_object.rx_buffer_length);
+	}
+	else if(huart->Instance == USART6)
+	{
+		uart6_manage_object.uart_handle = huart;
+		uart6_manage_object.callback_function = callback_function;
+		uart6_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UARTEx_ReceiveToIdle_DMA(uart6_manage_object.uart_handle, uart6_manage_object.rx_buffer, uart6_manage_object.rx_buffer_length);
 	}
 }
 
@@ -86,27 +163,51 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
 	if(huart->Instance == USART1)
 	{
-		if(uart1_instance.callback_function != NULL)
+		if(uart1_manage_object.callback_function != NULL)
 		{
-			uart1_instance.callback_function(uart1_instance.rx_buffer, Size);
+			uart1_manage_object.callback_function(uart1_manage_object.rx_buffer, Size);
 		}
-		HAL_UARTEx_ReceiveToIdle_DMA(uart1_instance.uart_handle, uart1_instance.rx_buffer, uart1_instance.rx_buffer_length);
+		HAL_UARTEx_ReceiveToIdle_DMA(uart1_manage_object.uart_handle, uart1_manage_object.rx_buffer, uart1_manage_object.rx_buffer_length);
 	}
-	if(huart->Instance == USART3)
+	else if(huart->Instance == USART2)
 	{
-		if(uart3_instance.callback_function != NULL)
+		if(uart2_manage_object.callback_function != NULL)
 		{
-			uart3_instance.callback_function(uart3_instance.rx_buffer, Size);
+			uart2_manage_object.callback_function(uart2_manage_object.rx_buffer, Size);
 		}
-		HAL_UARTEx_ReceiveToIdle_DMA(uart3_instance.uart_handle, uart3_instance.rx_buffer, uart3_instance.rx_buffer_length);
+		HAL_UARTEx_ReceiveToIdle_DMA(uart2_manage_object.uart_handle, uart2_manage_object.rx_buffer, uart2_manage_object.rx_buffer_length);
 	}
-	if(huart->Instance == USART6)
+	else if(huart->Instance == USART3)
 	{
-		if(uart6_instance.callback_function != NULL)
+		if(uart3_manage_object.callback_function != NULL)
 		{
-			uart6_instance.callback_function(uart6_instance.rx_buffer, Size);
+			uart3_manage_object.callback_function(uart3_manage_object.rx_buffer, Size);
 		}
-		HAL_UARTEx_ReceiveToIdle_DMA(uart6_instance.uart_handle, uart6_instance.rx_buffer, uart6_instance.rx_buffer_length);
+		HAL_UARTEx_ReceiveToIdle_DMA(uart3_manage_object.uart_handle, uart3_manage_object.rx_buffer, uart3_manage_object.rx_buffer_length);
+	}
+	else if(huart->Instance == UART4)
+	{
+		if(uart4_manage_object.callback_function != NULL)
+		{
+			uart4_manage_object.callback_function(uart4_manage_object.rx_buffer, Size);
+		}
+		HAL_UARTEx_ReceiveToIdle_DMA(uart4_manage_object.uart_handle, uart4_manage_object.rx_buffer, uart4_manage_object.rx_buffer_length);
+	}
+	else if(huart->Instance == UART5)
+	{
+		if(uart5_manage_object.callback_function != NULL)
+		{
+			uart5_manage_object.callback_function(uart5_manage_object.rx_buffer, Size);
+		}
+		HAL_UARTEx_ReceiveToIdle_DMA(uart5_manage_object.uart_handle, uart5_manage_object.rx_buffer, uart5_manage_object.rx_buffer_length);
+	}
+	else if(huart->Instance == USART6)
+	{
+		if(uart6_manage_object.callback_function != NULL)
+		{
+			uart6_manage_object.callback_function(uart6_manage_object.rx_buffer, Size);
+		}
+		HAL_UARTEx_ReceiveToIdle_DMA(uart6_manage_object.uart_handle, uart6_manage_object.rx_buffer, uart6_manage_object.rx_buffer_length);
 	}
 }
 

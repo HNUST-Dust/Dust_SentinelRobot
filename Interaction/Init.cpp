@@ -70,25 +70,34 @@ void can2_callback_function(CanRxBuffer* CAN_RxMessage)
 }
 
 /**
- * @brief dbus回调函数
+ * @brief remote回调函数
  * 
  * @param buffer 
  * @param length 
  */
 void uart3_callback_function(uint8_t* buffer, uint16_t length) 
 {	
-	robot_.remote_dr16_.DataProcess(buffer);
+	robot_.remote_dr16_.UartRxCpltCallback(buffer);
 
     robot_.mcu_comm_.send_chassis_data_.start_of_frame   = 0xAA;
-    robot_.mcu_comm_.send_chassis_data_.chassis_speed_x  = robot_.remote_dr16_.output.chassis_x;
-    robot_.mcu_comm_.send_chassis_data_.chassis_speed_y  = robot_.remote_dr16_.output.chassis_y;
-    robot_.mcu_comm_.send_chassis_data_.rotation         = robot_.remote_dr16_.output.rotation;
-    robot_.mcu_comm_.send_chassis_data_.switch_l         = robot_.remote_dr16_.output.SwitchL;
+    robot_.mcu_comm_.send_chassis_data_.chassis_speed_x  = robot_.remote_dr16_.output_.chassis_x;
+    robot_.mcu_comm_.send_chassis_data_.chassis_speed_y  = robot_.remote_dr16_.output_.chassis_y;
+    robot_.mcu_comm_.send_chassis_data_.rotation         = robot_.remote_dr16_.output_.rotation;
+    robot_.mcu_comm_.send_chassis_data_.switch_l         = robot_.remote_dr16_.output_.switch_l;
 
     robot_.mcu_comm_.send_comm_data_.start_of_frame      = 0xAB;
     robot_.mcu_comm_.send_comm_data_.armor               = 0x00;
     robot_.mcu_comm_.send_comm_data_.supercap            = 0;
-    robot_.mcu_comm_.send_comm_data_.switch_r            = robot_.remote_dr16_.output.SwitchR;
+    robot_.mcu_comm_.send_comm_data_.switch_r            = robot_.remote_dr16_.output_.switch_r;
+}
+
+/**
+ * @brief remote侦测回调函数
+ * 
+ */
+void tim2_callback_function()
+{
+    robot_.remote_dr16_.AlivePeriodElapsedCallback();
 }
 
 /**

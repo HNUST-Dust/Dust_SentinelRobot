@@ -63,25 +63,6 @@ void McuComm::TaskEntry(void *argument) {
 }
 
 /**
- * @brief MCU任务函数
- * 
- */
-void McuComm::Task()
-{
-     McuCommData send_comm_data_local;
-     for (;;)
-     {    // 用临界区一次性复制，避免撕裂
-          // __disable_irq();
-          // send_comm_data__Local = *const_cast<const struct McuCommData*>(&(send_comm_data_));
-          // __enable_irq();
-          
-          // 将遥控器数据发给下板
-          // CanSendCommand();
-          // osDelay(pdMS_TO_TICKS(10));
-     }
-}
-
-/**
  * @brief MCU can发送底盘数据函数
  * 
  */
@@ -165,6 +146,41 @@ void McuComm::CanSendAutoaim()
      // can_tx_frame[6] = 0x00;
      // can_tx_frame[7] = 0x00;
      // can_send_data(can_manage_object_->can_handler, can_tx_id_, can_tx_frame, 8);
+}
+
+/**
+ * @brief MCU can掉线数据函数
+ * 
+ */
+void McuComm::DisconnectData()
+{
+     send_chassis_data_.chassis_speed_x = 1024;
+     send_chassis_data_.chassis_speed_y = 1024;
+     send_chassis_data_.rotation = 1024;
+     send_chassis_data_.switch_l = 3;
+
+     send_comm_data_.switch_r = 3;
+     send_comm_data_.armor = 0;
+     send_comm_data_.supercap = 0;
+}
+
+/**
+ * @brief MCU任务函数
+ * 
+ */
+void McuComm::Task()
+{
+     McuCommData send_comm_data_local;
+     for (;;)
+     {    // 用临界区一次性复制，避免撕裂
+          // __disable_irq();
+          // send_comm_data__Local = *const_cast<const struct McuCommData*>(&(send_comm_data_));
+          // __enable_irq();
+          
+          // 将遥控器数据发给下板
+          // CanSendCommand();
+          // osDelay(pdMS_TO_TICKS(10));
+     }
 }
 
 /**

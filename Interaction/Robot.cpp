@@ -12,7 +12,9 @@
 
 #include "Robot.h"
 #include "alg_math.h"
+#include "bsp_uart.h"
 #include "bsp_usb.h"
+#include "dvc_remote_dji.h"
 
 /* Private macros ------------------------------------------------------------*/
 
@@ -79,6 +81,11 @@ void Robot::Task()
         /****************************   通讯   ****************************/
 
 
+        // 若掉线发送空白数据
+        if(remote_dr16_.remote_dji_alive_status == REMOTE_DJI_STATUS_DISABLE)
+        {
+            mcu_comm_.DisconnectData();
+        }
         // 发送下板数据
         mcu_comm_.CanSendChassis();
         mcu_comm_.CanSendCommand();
@@ -88,7 +95,7 @@ void Robot::Task()
 
 
         // 角度环
-        gimbal_.pitch_angle_pid_.SetTarget(remote_dr16_.output.gimbal_pitch);
+        gimbal_.pitch_angle_pid_.SetTarget(remote_dr16_.output_.pitch);
         gimbal_.pitch_angle_pid_.SetNow(gimbal_.GetNowPitchAngle());
         gimbal_.pitch_angle_pid_.CalculatePeriodElapsedCallback();
 
@@ -99,7 +106,7 @@ void Robot::Task()
 
         // 发送力矩
         gimbal_.SetTargetPitchTorque(gimbal_.pitch_speed_pid_.GetOut());
-        // printf("%f,%f,%f\n", remote_dr16_.output.gimbal_pitch, gimbal_.GetNowPitchAngle(), gimbal_.pitch_speed_pid_.GetOut());
+        // printf("%f,%f,%f\n", remote_dr16_.output_.pitch, gimbal_.GetNowPitchAngle(), gimbal_.pitch_speed_pid_.GetOut());
         // printf("%f,%f\n", imu_.GetRollAngle() * PI / 180.f, imu_.GetRollAngle());
 
 
@@ -107,14 +114,14 @@ void Robot::Task()
 
 
         // 右按钮
-        switch (mcu_comm_.send_comm_data_.switch_r)
+        switch (remote_dr16_.output_.switch_r)
         {
-            case Switch_UP:
+            case SWITCH_UP:
             {
                 shoot_.SetTargetShootSpeed(MAX_SHOOT_SPEED);
                 break;
             }
-            case Switch_MID:
+            case SWITCH_MID:
             {
                 shoot_.SetTargetShootSpeed(0);
                 break;
@@ -130,15 +137,15 @@ void Robot::Task()
         /****************************   调试   ****************************/
 
 
-        pc_comm_.send_autoaim_data.armor = 0x00;
+        // pc_comm_.send_autoaim_data.armor = 0x00;
         // pc_comm_.send_autoaim_data.yaw   =  0.f;
-        // pc_comm_.send_autoaim_data.pitch =  -0.25f;
-        pc_comm_.Send_Message();
+        // pc_comm_.send_autoaim_data.pitch =  0.f;
+        // pc_comm_.Send_Message();
 
-        memcpy(mcu_comm_.send_autoaim_data_.autoaim_yaw, pc_comm_.recv_autoaim_data.yaw, 4);
-        mcu_comm_.CanSendAutoaim();
+        // memcpy(mcu_comm_.send_autoaim_data_.autoaim_yaw, pc_comm_.recv_autoaim_data.yaw, 4);
+        // mcu_comm_.CanSendAutoaim();
 
-        osDelay(pdMS_TO_TICKS(5));
+        osDelay(pdMS_TO_TICKS(1));
     }
 }
 
