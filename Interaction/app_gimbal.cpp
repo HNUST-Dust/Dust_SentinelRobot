@@ -11,9 +11,6 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include "app_gimbal.h"
-#include "cmsis_os2.h"
-#include "projdefs.h"
-#include "stdio.h"
 
 /* Private macros ------------------------------------------------------------*/
 
@@ -30,30 +27,28 @@
 void Gimbal::Init()
 {
     // yaw角角度环pid
-    yaw_angle_pid_.Init
-    (
+    yaw_angle_pid_.Init(
         0.47f,
         0.002f,
         0.00075f,
         0.0f,
         0.f,
         15.0f,
-        0.005f,
+        0.001f,
         0.0f,
         0.0f,
         0.0f,
         0.0f  
     );
     // yaw角速度环pid
-    yaw_speed_pid_.Init
-    (
+    yaw_speed_pid_.Init(
         0.725f,
         0.0002f,
         0.0f,
         0.0f,
         0.0f,
         10.f,
-        0.005f,
+        0.001f,
         0.0f,
         0.0f,
         0.0f,

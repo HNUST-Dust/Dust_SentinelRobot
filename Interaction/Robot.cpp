@@ -40,7 +40,7 @@ void Robot::Init()
     // 底盘陀螺仪初始化
     imu_.Init();
     // 10s时间等待陀螺仪收敛
-    osDelay(pdMS_TO_TICKS(1000 * 10));
+    osDelay(pdMS_TO_TICKS(10 * 1000));
     // 摩擦轮初始化
     chassis_.Init();
     // 拨弹盘初始化
@@ -112,7 +112,7 @@ void Robot::Task()
 
 
         // 遥控器累加绝对精准yaw轴角度
-        yaw_remote_angle += (mcu_chassis_data_local.rotation * K + C) * 1.5;
+        yaw_remote_angle += (mcu_chassis_data_local.rotation * K + C) * 1.0;
 
         // 角度环
         yaw_angle_diff = CalcYawErrorAngle(normalize_angle(mcu_comm_data_local.yaw_angle), normalize_angle(yaw_remote_angle));
@@ -152,11 +152,14 @@ void Robot::Task()
             case CHASSIS_SPIN_CLOCKWISE:
             {
                 chassis_.SetTargetVelocityRotation(MAX_OMEGA_SPEED);
+
                 break;
             }
+
             case CHASSIS_SPIN_DISABLE:
             {
                 chassis_.SetTargetVelocityRotation(0);
+
                 break;
             }
             case CHASSIS_SPIN_COUNTER_CLOCK_WISE:
@@ -168,11 +171,15 @@ void Robot::Task()
                 chassis_.chassis_follow_pid_.CalculatePeriodElapsedCallback();
 
                 chassis_.SetTargetVelocityRotation(chassis_.chassis_follow_pid_.GetOut());
+                // printf("%f\n", chassis_.chassis_follow_pid_.GetOut());
+
+                break;
             }
             default:
             {
                 chassis_.SetTargetVelocityRotation(0);
                 gimbal_.SetTargetYawOmega(0);
+
                 break;
             }
         }
@@ -192,7 +199,7 @@ void Robot::Task()
             }
             case Switch_DOWN:
             {
-                reload_.SetTargetReloadRotation(-MAX_RELOAD_SPEED / 4);
+                reload_.SetTargetReloadRotation(-MAX_RELOAD_SPEED / 2);
                 break;
             }
             default:
@@ -205,7 +212,7 @@ void Robot::Task()
 
         /****************************   调试   ****************************/
 
-        osDelay(pdMS_TO_TICKS(5));
+        osDelay(pdMS_TO_TICKS(1));
     }
 }
 

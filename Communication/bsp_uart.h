@@ -34,19 +34,23 @@ typedef void (* Uart_Callback)(uint8_t* buffer, uint16_t length);
  * @brief ：UART处理结构体
  * 
  */
-typedef struct
+struct UartManageObject
 {
     UART_HandleTypeDef* uart_handle;
     uint8_t tx_buffer[UART_BUFFER_LENGTH];
     uint8_t rx_buffer[UART_BUFFER_LENGTH];
     uint16_t rx_buffer_length;
     Uart_Callback callback_function;
-} Uart_Instance;
+};
 
 /* Exported variables --------------------------------------------------------*/
 
-extern Uart_Instance uart1_instance;
-extern Uart_Instance uart6_instance;
+extern UartManageObject uart1_manage_object;
+extern UartManageObject uart2_manage_object;
+extern UartManageObject uart3_manage_object;
+extern UartManageObject uart4_manage_object;
+extern UartManageObject uart5_manage_object;
+extern UartManageObject uart6_manage_object;
 
 /* Exported function declarations --------------------------------------------*/
 
@@ -56,6 +60,7 @@ extern "C" {
 
 // 函数声明
 void uart_init(UART_HandleTypeDef* huart, Uart_Callback callback_function, uint16_t rx_buffer_length);
+void uart_reinit(UART_HandleTypeDef* huart, Uart_Callback callback_function, uint16_t rx_buffer_length);
 
 // 回调函数声明
 void uart1_callback_function(uint8_t* buffer, uint16_t length);

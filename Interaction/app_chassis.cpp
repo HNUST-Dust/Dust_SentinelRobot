@@ -35,7 +35,7 @@ void Chassis::Init()
         0.0f,
         0.0f,
         30.0f,
-        0.005f,
+        0.001f,
         0.0f,
         0.0f,
         0.0f,
@@ -60,7 +60,7 @@ void Chassis::Init()
     static const osThreadAttr_t kChassisTaskAttr = 
     {
         .name = "chassis_task",
-        .stack_size = 128 * 4,
+        .stack_size = 1024,
         .priority = (osPriority_t) osPriorityNormal
     };
     // 启动任务，将 this 传入
