@@ -70,6 +70,17 @@ void can2_callback_function(CanRxBuffer* CAN_RxMessage)
 }
 
 /**
+ * @brief ：UART1回调函数
+ * 
+ * @param buffer ：接收缓冲区
+ * @param length ：接收长度
+ */
+void uart1_callback_function(uint8_t* buffer, uint16_t length)
+{	
+	robot_.remote_vt03_.UART_RxCpltCallback(buffer, length);
+}
+
+/**
  * @brief remote回调函数
  * 
  * @param buffer 
@@ -89,15 +100,6 @@ void uart3_callback_function(uint8_t* buffer, uint16_t length)
     robot_.mcu_comm_.send_comm_data_.armor               = 0x00;
     robot_.mcu_comm_.send_comm_data_.supercap            = 0;
     robot_.mcu_comm_.send_comm_data_.switch_r            = robot_.remote_dr16_.output_.switch_r;
-}
-
-/**
- * @brief remote侦测回调函数
- * 
- */
-void tim2_callback_function()
-{
-    robot_.remote_dr16_.AlivePeriodElapsedCallback();
 }
 
 /**

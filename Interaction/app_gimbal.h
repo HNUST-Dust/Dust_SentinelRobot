@@ -13,7 +13,11 @@
 
 /* Includes ------------------------------------------------------------------*/
 
+#include "stdio.h"
 #include "FreeRTOS.h"
+// alg
+#include "alg_math.h"
+#include "low_pass_filter.hpp"
 // module
 #include "dvc_motor_dm.h"
 // bsp
@@ -39,10 +43,15 @@ class Gimbal
 public:
     // DM4310电机
     MotorDmNormal motor_pitch_;
+
     // pitch角速度环
-    Pid pitch_speed_pid_;
+    Pid pitch_omega_pid_;
+
     // pitch角位置环
     Pid pitch_angle_pid_;
+
+    // 一阶低通滤波
+    LowPassFilter pitch_omega_filter_;
 
     void Init();
 
@@ -66,6 +75,8 @@ public:
 
     inline void SetTargetPitchTorque(float target_pitch_torque);
 
+    inline void SetRemoetPitchAngle(float remote_pitch_angle);
+
 protected:
     // pitch轴最小值
     float min_pitch_angle_ = -0.60f;
@@ -84,6 +95,12 @@ protected:
 
     // pitch轴当前力矩
     float now_pitch_torque_ = 0.0f;
+
+    // 遥控累加yaw角值
+    float remote_pitch_angle_ = 0.0f;
+
+    // yaw角角度差，用于角度环
+    float pitch_angle_diff_ = 0.0f;
 
     // 写变量
 
@@ -201,6 +218,16 @@ inline void Gimbal::SetTargetPitchOmega(float target_pitch_omega)
 inline void Gimbal::SetTargetPitchTorque(float target_pitch_torque)
 {
     target_pitch_torque_ = target_pitch_torque;
+}
+
+/**
+ * @brief 设定遥控累加yaw轴角度
+ * 
+ * @param remote_yaw_angle remote累加yaw轴角度
+ */
+inline void Gimbal::SetRemoetPitchAngle(float remote_pitch_angle)
+{
+    remote_pitch_angle_ = remote_pitch_angle;
 }
 
 

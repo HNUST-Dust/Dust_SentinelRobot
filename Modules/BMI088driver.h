@@ -47,10 +47,10 @@
 #define BMI088_GYRO_125_SEN 0.000066579027251980956150958662738366f
 
 // 需要手动修改
-#define GxOFFSET    0.00139211655f
-#define GyOFFSET    0.00101981009f
-#define GzOFFSET    0.00024181584f
-#define gNORM       9.62877369f
+#define GxOFFSET    0.00145549967f
+#define GyOFFSET    0.00135305908f
+#define GzOFFSET   -0.000250692305f
+#define gNORM       9.60752296f
 
 typedef struct
 {

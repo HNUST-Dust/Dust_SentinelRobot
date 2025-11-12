@@ -19,6 +19,7 @@
 #include "dvc_remote_dji.h"
 #include "dvc_MCU_comm.h"
 #include "dvc_PC_comm.h"
+#include "VT03.h"
 
 #include "app_gimbal.h"
 #include "app_shoot.h"
@@ -34,6 +35,8 @@ class Robot
 public:
     // 遥控
     RemoteDjiDR16 remote_dr16_;
+    
+    VT03 remote_vt03_;
     // 上下板通讯
     McuComm mcu_comm_;
     // pitch角云台

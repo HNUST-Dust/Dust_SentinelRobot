@@ -70,13 +70,14 @@ void INS_Task(void)
     INS.Gyro[X] = BMI088.Gyro[X];
     INS.Gyro[Y] = BMI088.Gyro[Y];
     INS.Gyro[Z] = BMI088.Gyro[Z];
+    INS.Temperature = BMI088.Temperature;
 
     // demo function,用于修正安装误差,可以不管,本demo暂时没用
-    IMU_Param_Correction(&IMU_Param, INS.Gyro, INS.Accel);
+    // IMU_Param_Correction(&IMU_Param, INS.Gyro, INS.Accel);
 
     // 计算重力加速度矢量和b系的XY两轴的夹角,可用作功能扩展,本demo暂时没用
-    INS.atanxz = -atan2f(INS.Accel[X], INS.Accel[Z]) * 180 / PI;
-    INS.atanyz = atan2f(INS.Accel[Y], INS.Accel[Z]) * 180 / PI;
+    // INS.atanxz = -atan2f(INS.Accel[X], INS.Accel[Z]) * 180 / PI;
+    // INS.atanyz = atan2f(INS.Accel[Y], INS.Accel[Z]) * 180 / PI;
 
     // 核心函数,EKF更新四元数
     IMU_QuaternionEKF_Update(INS.Gyro[X], INS.Gyro[Y], INS.Gyro[Z],
@@ -233,8 +234,8 @@ void IMU_Temperature_Ctrl(void)
 {
   PID_Calculate(&TempCtrl, BMI088.Temperature, RefTemp);
 
-  // TIM_Set_PWM(&htim3, TIM_CHANNEL_4,
-  //             float_constrain(float_rounding(TempCtrl.Output), 0, UINT32_MAX));
+  TIM_Set_PWM(&htim10, TIM_CHANNEL_1,
+              float_constrain(float_rounding(TempCtrl.Output), 0, UINT32_MAX));
 }
 
 //------------------------------------functions below are not used in this

@@ -26,11 +26,12 @@
  */
 void Gimbal::Init()
 {
+    // pitch轴角度环
     pitch_angle_pid_.Init
     (
         1.8f,
         0.02f,
-        0.01f,
+        0.005f,
         0.0f,
         0.f,
         15.0f,
@@ -40,7 +41,8 @@ void Gimbal::Init()
         0.0f,
         0.0f  
     );
-    pitch_speed_pid_.Init
+    // pitch轴角度环
+    pitch_omega_pid_.Init
     (
         1.0f,
         0.02f,
@@ -54,6 +56,9 @@ void Gimbal::Init()
         0.0f,
         0.0f  
     );
+    // pitch轴角度环滤波器
+    pitch_omega_filter_.Init(15.f, 0.001f);
+
     // 4310电机初始化
     motor_pitch_.Init(&hcan2, 0x04, 0x04);
 
@@ -100,8 +105,27 @@ void Gimbal::TaskEntry(void *argument)
  */
 void Gimbal::SelfResolution()
 {
+    // 获取当前数据
     now_pitch_omega_ = motor_pitch_.GetNowOmega();
     now_pitch_angle_ = motor_pitch_.GetNowAngle();
+
+    // 计算pitch轴偏差
+    pitch_angle_diff_ = now_pitch_angle_ - remote_pitch_angle_;
+
+    // 角度环
+    pitch_angle_pid_.SetTarget(0);
+    pitch_angle_pid_.SetNow(pitch_angle_diff_);
+    pitch_angle_pid_.CalculatePeriodElapsedCallback();
+
+    // 速度环
+    pitch_omega_pid_.SetTarget(pitch_angle_pid_.GetOut());
+    float filtered_omega = pitch_omega_filter_.Update(now_pitch_omega_);
+    pitch_omega_pid_.SetNow(filtered_omega);
+    pitch_omega_pid_.CalculatePeriodElapsedCallback();
+
+    // 设定目标力矩
+    SetTargetPitchTorque(pitch_omega_pid_.GetOut());
+    // printf("%f,%f\n", remote_pitch_angle_, pitch_omega_pid_.GetOut());
 }
 
 /**

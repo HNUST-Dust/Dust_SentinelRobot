@@ -10,6 +10,7 @@
  */
 #ifndef __DVC_REMOTE_DJI_H__
 #define __DVC_REMOTE_DJI_H__
+
 /* Includes ------------------------------------------------------------------*/
 
 #include "bsp_uart.h"

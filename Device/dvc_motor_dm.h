@@ -10,6 +10,7 @@
  */
 #ifndef MODULES_MOTOR_DM_H_
 #define MODULES_MOTOR_DM_H_
+
 /* Includes ------------------------------------------------------------------*/
 
 #include "alg_pid.h"

@@ -94,7 +94,7 @@ void McuComm::CanSendCommand()
 {
      static uint8_t can_tx_frame[8];
      union { float f; uint8_t b[4]; } conv;
-     conv.f = INS.YawTotalAngle;
+     conv.f = INS.Yaw;
 
      // 第二帧发送通用数据
      can_tx_frame[0] = 0xAB;

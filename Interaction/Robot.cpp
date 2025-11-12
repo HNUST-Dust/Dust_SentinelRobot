@@ -11,10 +11,8 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include "Robot.h"
-#include "alg_math.h"
 #include "bsp_uart.h"
-#include "bsp_usb.h"
-#include "dvc_remote_dji.h"
+#include "usart.h"
 
 /* Private macros ------------------------------------------------------------*/
 
@@ -35,6 +33,8 @@ void Robot::Init()
     // 上位机通讯
     pc_comm_.Init();
     // 遥控初始化
+    // remote_vt03_.Init(&huart1, uart1_callback_function, UART_BUFFER_LENGTH);
+
     remote_dr16_.Init(&huart3, uart3_callback_function, UART_BUFFER_LENGTH);
     // 上下板通讯组件初始化
     mcu_comm_.Init(&hcan1, 0x00, 0x01);
@@ -93,22 +93,7 @@ void Robot::Task()
 
         /****************************   云台   ****************************/
 
-
-        // 角度环
-        gimbal_.pitch_angle_pid_.SetTarget(remote_dr16_.output_.pitch);
-        gimbal_.pitch_angle_pid_.SetNow(gimbal_.GetNowPitchAngle());
-        gimbal_.pitch_angle_pid_.CalculatePeriodElapsedCallback();
-
-        // 速度环
-        gimbal_.pitch_speed_pid_.SetTarget(gimbal_.pitch_angle_pid_.GetOut());
-        gimbal_.pitch_speed_pid_.SetNow(gimbal_.motor_pitch_.GetNowOmega());
-        gimbal_.pitch_speed_pid_.CalculatePeriodElapsedCallback();
-
-        // 发送力矩
-        gimbal_.SetTargetPitchTorque(gimbal_.pitch_speed_pid_.GetOut());
-        // printf("%f,%f,%f\n", remote_dr16_.output_.pitch, gimbal_.GetNowPitchAngle(), gimbal_.pitch_speed_pid_.GetOut());
-        // printf("%f,%f\n", imu_.GetRollAngle() * PI / 180.f, imu_.GetRollAngle());
-
+        gimbal_.SetRemoetPitchAngle(remote_dr16_.output_.pitch);
 
         /****************************   模式   ****************************/
 
@@ -144,6 +129,10 @@ void Robot::Task()
 
         // memcpy(mcu_comm_.send_autoaim_data_.autoaim_yaw, pc_comm_.recv_autoaim_data.yaw, 4);
         // mcu_comm_.CanSendAutoaim();
+
+        // printf("%f\n", normalize_angle(imu_.GetYawAngleTotalAngle()));
+
+        // printf("%f\n", imu_.GetTemperature());
 
         osDelay(pdMS_TO_TICKS(1));
     }

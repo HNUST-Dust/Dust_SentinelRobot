@@ -53,6 +53,10 @@ public:
     {
         return INS.YawTotalAngle;
     }
+    inline float GetTemperature()
+    {
+        return INS.Temperature;
+    }
     
 };
 

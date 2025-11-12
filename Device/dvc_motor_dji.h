@@ -11,8 +11,14 @@
 #ifndef MODULES_MOTOR_DJI_H_
 #define MODULES_MOTOR_DJI_H_
 
+/* Includes ------------------------------------------------------------------*/
+
 #include "alg_pid.h"
 #include "bsp_can.h"
+
+/* Exported macros -----------------------------------------------------------*/
+
+/* Exported types ------------------------------------------------------------*/
 
 /**
  * @brief 大疆状态
@@ -383,9 +389,11 @@ protected:
     void DataProcess();
 
     void PidCalculate();
-
-    // void Output();
 };
+
+/* Exported variables --------------------------------------------------------*/
+
+/* Exported function declarations --------------------------------------------*/
 
 /**
  * @brief 获取最大电流
