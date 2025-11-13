@@ -13,7 +13,11 @@
 
 /* Includes ------------------------------------------------------------------*/
 
+#include "stdio.h"
 #include "FreeRTOS.h"
+// alg
+#include "alg_math.h"
+#include "low_pass_filter.hpp"
 // module
 #include "dvc_motor_dm.h"
 // bsp
@@ -34,17 +38,24 @@ enum GimbalControlType
     GIMBAL_CONTROL_TYPE_AUTOAIM,
 };
 
+/**
+ * @brief Gimbal类
+ * 
+ */
 class Gimbal
 {
 public:
     // DM4310电机
     MotorDmNormal motor_yaw_;
     
-    // yaw角速度环
-    Pid yaw_speed_pid_;
+    // yaw轴速度环
+    Pid yaw_omega_pid_;
 
-    // yaw角位置环
+    // yaw轴位置环
     Pid yaw_angle_pid_;
+
+    // yaw轴一阶低通滤波
+    LowPassFilter yaw_omega_filter_;
 
     void Init();
 
@@ -68,6 +79,10 @@ public:
 
     inline void SetTargetYawTorque(float target_yaw_torque);
 
+    inline void SetImuYawAngle(float imu_yaw_angle);
+
+    inline void SetRemoetYawAngle(float remote_yaw_angle);
+
 protected:
     // 内部变量
 
@@ -81,6 +96,15 @@ protected:
 
     // yaw轴当前力矩
     float now_yaw_torque_ = 0.0f;
+
+    // 遥控累加yaw角值
+    float remote_yaw_angle_ = 0.0f;
+
+    // 陀螺仪yaw轴角度
+    float imu_yaw_angle_ = 0.0f;
+
+    // yaw角角度差，用于角度环
+    float yaw_angle_diff_ = 0.0f;
 
     // 写变量
 
@@ -198,6 +222,26 @@ inline void Gimbal::SetTargetYawOmega(float target_yaw_omega)
 inline void Gimbal::SetTargetYawTorque(float target_yaw_torque)
 {
     target_yaw_torque_ = target_yaw_torque;
+}
+
+/**
+ * @brief 设定遥控累加yaw轴角度
+ * 
+ * @param remote_yaw_angle remote累加yaw轴角度
+ */
+inline void Gimbal::SetRemoetYawAngle(float remote_yaw_angle)
+{
+    remote_yaw_angle_ = remote_yaw_angle;
+}
+
+/**
+ * @brief 设定陀螺仪yaw轴角度
+ * 
+ * @param imu_yaw_angle 
+ */
+inline void Gimbal::SetImuYawAngle(float imu_yaw_angle)
+{
+    imu_yaw_angle_ = imu_yaw_angle;
 }
 
 #endif

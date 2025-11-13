@@ -11,6 +11,7 @@
  ******************************************************************************
  */
 #include "ins_task.h"
+#include "BMI088driver.h"
 #include "QuaternionEKF.h"
 #include "bsp_dwt.h"
 #include "bsp_pwm_temp.h"
@@ -70,6 +71,7 @@ void INS_Task(void)
     INS.Gyro[X] = BMI088.Gyro[X];
     INS.Gyro[Y] = BMI088.Gyro[Y];
     INS.Gyro[Z] = BMI088.Gyro[Z];
+    INS.Temperature = BMI088.Temperature;
 
     // demo function,用于修正安装误差,可以不管,本demo暂时没用
     IMU_Param_Correction(&IMU_Param, INS.Gyro, INS.Accel);

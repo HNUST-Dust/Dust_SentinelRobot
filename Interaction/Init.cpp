@@ -73,10 +73,45 @@ void can1_callback_function(CanRxBuffer* CAN_RxMessage)
     }
 }
 
+/**
+ * @brief UART6回调函数
+ * 
+ * @param buffer 
+ * @param length 
+ */
+void uart6_callback_function(uint8_t* buffer, uint16_t length)
+{	
+    if(buffer[0] == 0x13)
+    {
+        union {float f; uint8_t b[4] ;} conv;
+
+        conv.b[0] = buffer[1];
+        conv.b[1] = buffer[2];
+        conv.b[2] = buffer[3];
+        conv.b[3] = buffer[4];
+
+        robot_.chassis_.motor_chassis_1_.pid_omega_.SetKp(conv.f);
+        robot_.chassis_.motor_chassis_3_.pid_omega_.SetKp(conv.f);
+    }
+    else if(buffer[0] == 0x24)
+    {
+        union {float f; uint8_t b[4] ;} conv;
+
+        conv.b[0] = buffer[1];
+        conv.b[1] = buffer[2];
+        conv.b[2] = buffer[3];
+        conv.b[3] = buffer[4];
+
+        robot_.chassis_.motor_chassis_2_.pid_omega_.SetKp(conv.f);
+        robot_.chassis_.motor_chassis_4_.pid_omega_.SetKp(conv.f);
+    }
+}
+
 /* Function prototypes -------------------------------------------------------*/
 
 void Init()
 {
     can_init(&hcan1, can1_callback_function);
+    uart_init(&huart6, uart6_callback_function, UART_BUFFER_LENGTH);
     robot_.Init();
 }

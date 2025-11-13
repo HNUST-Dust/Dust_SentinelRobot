@@ -14,11 +14,11 @@
 
 /* Private macros ------------------------------------------------------------*/
 
-#define K                    1.f / 660.f
-#define C                    -256.f / 165.f
-#define MAX_OMEGA_SPEED      15.f
-#define MAX_YAW_SPEED        10.f
-#define MAX_RELOAD_SPEED     -10.f
+#define K                       1.f / 660.f
+#define C                       -256.f / 165.f
+#define MAX_OMEGA_SPEED         25.f
+#define MAX_RELOAD_SPEED        -10.f
+#define MAX_GYROSCOPE_SPEED     30.f
 
 /* Private types -------------------------------------------------------------*/
 
@@ -87,8 +87,6 @@ void Robot::Task()
     mcu_comm_data_local.switch_r               = Switch_MID;
     mcu_comm_data_local.yaw_angle              = 0;
 
-    // 遥控累加yaw角值
-    float yaw_remote_angle = 0.0f;
     // yaw角角度差，用于角度环
     float yaw_angle_diff = 0.0f;
     // 底盘yaw角角度差，用于小陀螺行进
@@ -112,30 +110,22 @@ void Robot::Task()
 
 
         // 遥控器累加绝对精准yaw轴角度
-        yaw_remote_angle += (mcu_chassis_data_local.rotation * K + C) * 1.0;
+        remote_yaw_angle_ += (mcu_chassis_data_local.rotation * K + C) * 1;
 
-        // 角度环
-        yaw_angle_diff = CalcYawErrorAngle(normalize_angle(mcu_comm_data_local.yaw_angle), normalize_angle(yaw_remote_angle));
-        gimbal_.yaw_angle_pid_.SetTarget(0);
-        gimbal_.yaw_angle_pid_.SetNow(yaw_angle_diff);
-        gimbal_.yaw_angle_pid_.CalculatePeriodElapsedCallback();
-
-        // 速度环
-        gimbal_.yaw_speed_pid_.SetTarget(gimbal_.yaw_angle_pid_.GetOut());
-        gimbal_.yaw_speed_pid_.SetNow(gimbal_.GetNowYawOmega());
-        gimbal_.yaw_speed_pid_.CalculatePeriodElapsedCallback();
-
-        // 发送力矩
-        gimbal_.SetTargetYawTorque(gimbal_.yaw_speed_pid_.GetOut());
-
-        // printf("%f\n", gimbal_.yaw_angle_pid_.GetOut());
+        if(remote_yaw_angle_ >= 180.f){
+            remote_yaw_angle_ -= 360.f;
+        }else if(remote_yaw_angle_ <= -180.f){
+            remote_yaw_angle_ += 360.f;
+        }
+        gimbal_.SetRemoetYawAngle(remote_yaw_angle_);
+        gimbal_.SetImuYawAngle(mcu_comm_data_local.yaw_angle);
 
 
         /****************************   底盘   ****************************/
 
 
         // 计算云台底盘角度差
-        chassis_yaw_angle_diff = yaw_remote_angle - imu_.GetYawAngleTotalAngle();
+        chassis_yaw_angle_diff = normalize_angle(remote_yaw_angle_) - imu_.GetYawAngle();
         // 设置当前角度差
         chassis_.SetNowYawAngleDiff(chassis_yaw_angle_diff);
         // 设置目标映射速度
@@ -145,41 +135,35 @@ void Robot::Task()
 
         /****************************   模式   ****************************/
 
-
+        
         // 左按钮
         switch (mcu_chassis_data_local.switch_l) 
         {
             case CHASSIS_SPIN_CLOCKWISE:
             {
-                chassis_.SetTargetVelocityRotation(MAX_OMEGA_SPEED);
-
+                chassis_.SetTargetVelocityRotation(25);
                 break;
             }
-
             case CHASSIS_SPIN_DISABLE:
             {
                 chassis_.SetTargetVelocityRotation(0);
-
                 break;
             }
             case CHASSIS_SPIN_COUNTER_CLOCK_WISE:
             {
-                chassis_angle_diff = CalcYawErrorAngle(normalize_angle(yaw_remote_angle) ,normalize_angle(imu_.GetYawAngleTotalAngle()));
+                chassis_angle_diff = CalcYawErrorAngle(normalize_angle(remote_yaw_angle_) ,imu_.GetYawAngle());
 
                 chassis_.chassis_follow_pid_.SetTarget(0);
                 chassis_.chassis_follow_pid_.SetNow(chassis_angle_diff);
                 chassis_.chassis_follow_pid_.CalculatePeriodElapsedCallback();
 
                 chassis_.SetTargetVelocityRotation(chassis_.chassis_follow_pid_.GetOut());
-                // printf("%f\n", chassis_.chassis_follow_pid_.GetOut());
-
                 break;
             }
             default:
             {
                 chassis_.SetTargetVelocityRotation(0);
                 gimbal_.SetTargetYawOmega(0);
-
                 break;
             }
         }
@@ -211,7 +195,7 @@ void Robot::Task()
 
 
         /****************************   调试   ****************************/
-
+        
         osDelay(pdMS_TO_TICKS(1));
     }
 }

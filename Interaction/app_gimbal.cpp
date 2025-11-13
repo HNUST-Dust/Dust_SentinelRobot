@@ -26,11 +26,11 @@
  */
 void Gimbal::Init()
 {
-    // yaw角角度环pid
+    // yaw轴角度环pid
     yaw_angle_pid_.Init(
         0.47f,
         0.002f,
-        0.00075f,
+        0.0027f,
         0.0f,
         0.f,
         15.0f,
@@ -40,8 +40,8 @@ void Gimbal::Init()
         0.0f,
         0.0f  
     );
-    // yaw角速度环pid
-    yaw_speed_pid_.Init(
+    // yaw轴速度环pid
+    yaw_omega_pid_.Init(
         0.725f,
         0.0002f,
         0.0f,
@@ -54,6 +54,9 @@ void Gimbal::Init()
         0.0f,
         0.0f  
     );
+    // yaw轴速度环滤波器
+    yaw_omega_filter_.Init(15.0f, 0.001f);
+
     // 4310电机初始化
     motor_yaw_.Init(&hcan1, 0x06, 0x06);
 
@@ -114,8 +117,26 @@ void Gimbal::TaskEntry(void *argument)
  */
 void Gimbal::SelfResolution()
 {
-    now_yaw_omega_   = motor_yaw_.GetNowOmega();
-    now_yaw_angle_ = motor_yaw_.GetControlAngle();
+    // 获取当前数据
+    now_yaw_omega_ = motor_yaw_.GetNowOmega();
+    now_yaw_angle_ = motor_yaw_.GetNowAngle();
+
+    // 计算yaw轴偏差
+    yaw_angle_diff_ = CalcYawErrorAngle(now_yaw_angle_ * 14.4, remote_yaw_angle_);
+
+    // 角度环
+    yaw_angle_pid_.SetTarget(0);
+    yaw_angle_pid_.SetNow(yaw_angle_diff_);
+    yaw_angle_pid_.CalculatePeriodElapsedCallback();
+
+    // 速度环
+    yaw_omega_pid_.SetTarget(yaw_angle_pid_.GetOut());
+    float filtered_omega = yaw_omega_filter_.Update(now_yaw_omega_);    // 一阶低通滤波
+    yaw_omega_pid_.SetNow(filtered_omega);
+    yaw_omega_pid_.CalculatePeriodElapsedCallback();
+
+    // 设定目标力矩
+    SetTargetYawTorque(yaw_omega_pid_.GetOut());
 }
 
 /**
