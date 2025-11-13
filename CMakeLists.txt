@@ -14,7 +14,7 @@ set(SIZE arm-none-eabi-size)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 # 文件名称
-project(Dust_SentinelRobotChassis_L C CXX ASM)
+project(Dust_SentinelRobot_L C CXX ASM)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 
@@ -123,7 +123,7 @@ link_directories(${CMAKE_SOURCE_DIR}/Drivers/ARM/DSP/Lib)
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 
-target_link_options(Dust_SentinelRobotChassis_L.elf PRIVATE -u _printf_float)
+target_link_options(Dust_SentinelRobot_L.elf PRIVATE -u _printf_float)
 target_link_libraries(${PROJECT_NAME}.elf arm_cortexM4lf_math)
 
 set(HEX_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.hex)

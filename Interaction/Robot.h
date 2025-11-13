@@ -15,7 +15,6 @@
 
 // alg
 #include "alg_pid.h"
-#include "alg_math.h"
 // bsp
 #include "stdio.h"
 #include "bsp_dwt.h"
@@ -51,6 +50,10 @@ public:
     void Task();
     
 protected:
+
+    // 遥控累加yaw角值
+    float remote_yaw_angle_ = 0.0f;
+
     // 机器人等级
     int32_t robot_level_ = 1;
     static void TaskEntry(void *param);  // FreeRTOS 入口，静态函数

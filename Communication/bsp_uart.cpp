@@ -222,10 +222,7 @@ void uart1_callback_function(uint8_t* buffer, uint16_t length)
 	printf("%s\n", buffer);
 }
 
-void uart6_callback_function(uint8_t* buffer, uint16_t length)
-{	
-	
-}
+
 
 
 

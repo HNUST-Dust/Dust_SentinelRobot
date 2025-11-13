@@ -51,6 +51,11 @@ public:
     {
         return INS.YawTotalAngle;
     }
+
+    inline float GetTemperature()
+    {
+        return INS.Temperature;
+    }
 };
 
 #endif /* IMU_H_ */
