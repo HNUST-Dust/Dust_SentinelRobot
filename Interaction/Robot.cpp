@@ -89,8 +89,6 @@ void Robot::Task()
 
     // yaw角角度差，用于角度环
     float yaw_angle_diff = 0.0f;
-    // 底盘yaw角角度差，用于小陀螺行进
-    float chassis_yaw_angle_diff = 0.0f;
     // 底盘yaw角角度差，用于底盘跟随
     float chassis_angle_diff = 0.0f;
 
@@ -124,10 +122,8 @@ void Robot::Task()
         /****************************   底盘   ****************************/
 
 
-        // 计算云台底盘角度差
-        chassis_yaw_angle_diff = normalize_angle(remote_yaw_angle_) - imu_.GetYawAngle();
         // 设置当前角度差
-        chassis_.SetNowYawAngleDiff(chassis_yaw_angle_diff);
+        chassis_.SetNowYawAngleDiff(normalize_angle(gimbal_.GetNowYawAngle() * 14.4f));
         // 设置目标映射速度
         chassis_.SetTargetVxInGimbal((mcu_chassis_data_local.chassis_speed_x * K + C) * MAX_OMEGA_SPEED);
         chassis_.SetTargetVyInGimbal((mcu_chassis_data_local.chassis_speed_y * K + C) * MAX_OMEGA_SPEED);
@@ -195,10 +191,6 @@ void Robot::Task()
 
 
         /****************************   调试   ****************************/
-
-        // printf("%f,%f\n", imu_.GetYawAngleTotalAngle(), mcu_comm_data_local.yaw_angle);
-        // printf("%f,%f,%f,%f\n", chassis_.motor_chassis_1_.GetNowOmega(), chassis_.motor_chassis_2_.GetNowOmega(),
-        //                         chassis_.motor_chassis_3_.GetNowOmega(), chassis_.motor_chassis_4_.GetNowOmega());
         
         osDelay(pdMS_TO_TICKS(1));
     }

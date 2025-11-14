@@ -30,7 +30,7 @@ void Gimbal::Init()
     yaw_angle_pid_.Init(
         0.47f,
         0.002f,
-        0.00075f,
+        0.0027f,
         0.0f,
         0.f,
         15.0f,
@@ -123,7 +123,6 @@ void Gimbal::SelfResolution()
 
     // 计算yaw轴偏差
     yaw_angle_diff_ = CalcYawErrorAngle(imu_yaw_angle_, remote_yaw_angle_);
-    // yaw_angle_diff_ = CalcYawErrorAngle(normalize_angle(GetNowYawAngle() * 14.4f), remote_yaw_angle_);
 
     // 角度环
     yaw_angle_pid_.SetTarget(0);
