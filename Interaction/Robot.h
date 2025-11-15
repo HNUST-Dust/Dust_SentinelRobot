@@ -26,6 +26,7 @@
 #include "app_reload.h"
 #include "app_gimbal.h"
 #include "app_chassis.h"
+#include "supercap.h"
 
 /* Exported macros -----------------------------------------------------------*/
 
@@ -44,6 +45,8 @@ public:
     Reload reload_;
     // 底盘陀螺仪
     Imu imu_;
+    // 超级电容
+    Supercap supercap_;
 
     void Init();
 

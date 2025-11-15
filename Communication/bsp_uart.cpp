@@ -111,44 +111,32 @@ void uart_reinit(UART_HandleTypeDef* huart, Uart_Callback callback_function, uin
 {
 	if(huart->Instance == USART1)
 	{
-		uart1_manage_object.uart_handle = huart;
-		uart1_manage_object.callback_function = callback_function;
-		uart1_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UART_AbortReceive(uart1_manage_object.uart_handle);
 		HAL_UARTEx_ReceiveToIdle_DMA(uart1_manage_object.uart_handle, uart1_manage_object.rx_buffer, uart1_manage_object.rx_buffer_length);
 	}
 	else if(huart->Instance == USART2)
 	{
-		uart2_manage_object.uart_handle = huart;
-		uart2_manage_object.callback_function = callback_function;
-		uart2_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UART_AbortReceive(uart2_manage_object.uart_handle);
 		HAL_UARTEx_ReceiveToIdle_DMA(uart2_manage_object.uart_handle, uart2_manage_object.rx_buffer, uart2_manage_object.rx_buffer_length);
 	}
 	else if(huart->Instance == USART3)
 	{
-		uart3_manage_object.uart_handle = huart;
-		uart3_manage_object.callback_function = callback_function;
-		uart3_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UART_AbortReceive(uart3_manage_object.uart_handle);
 		HAL_UARTEx_ReceiveToIdle_DMA(uart3_manage_object.uart_handle, uart3_manage_object.rx_buffer, uart3_manage_object.rx_buffer_length);
 	}
 	else if(huart->Instance == UART4)
 	{
-		uart4_manage_object.uart_handle = huart;
-		uart4_manage_object.callback_function = callback_function;
-		uart4_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UART_AbortReceive(uart4_manage_object.uart_handle);
 		HAL_UARTEx_ReceiveToIdle_DMA(uart4_manage_object.uart_handle, uart4_manage_object.rx_buffer, uart4_manage_object.rx_buffer_length);
 	}
 	else if(huart->Instance == UART5)
 	{
-		uart5_manage_object.uart_handle = huart;
-		uart5_manage_object.callback_function = callback_function;
-		uart5_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UART_AbortReceive(uart5_manage_object.uart_handle);
 		HAL_UARTEx_ReceiveToIdle_DMA(uart5_manage_object.uart_handle, uart5_manage_object.rx_buffer, uart5_manage_object.rx_buffer_length);
 	}
 	else if(huart->Instance == USART6)
 	{
-		uart6_manage_object.uart_handle = huart;
-		uart6_manage_object.callback_function = callback_function;
-		uart6_manage_object.rx_buffer_length = rx_buffer_length;
+		HAL_UART_AbortReceive(uart6_manage_object.uart_handle);
 		HAL_UARTEx_ReceiveToIdle_DMA(uart6_manage_object.uart_handle, uart6_manage_object.rx_buffer, uart6_manage_object.rx_buffer_length);
 	}
 }
