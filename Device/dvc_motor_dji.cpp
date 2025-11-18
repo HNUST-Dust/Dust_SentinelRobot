@@ -480,7 +480,6 @@ void MotorDjiC620::CalculatePeriodElapsedCallback()
     math_constrain(&tmp_value, -current_max_, current_max_);
     out_ = tmp_value * current_to_out_;
 
-
     // 计算功率估计值
     power_estimate_ = power_calculate(
                         power_k_0_, 

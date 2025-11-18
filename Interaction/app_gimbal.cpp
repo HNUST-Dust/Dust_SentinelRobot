@@ -28,31 +28,36 @@ void Gimbal::Init()
 {
     // yaw轴角度环pid
     yaw_angle_pid_.Init(
-        0.47f,
-        0.002f,
-        0.0027f,
+        0.5f,
+        0.05f,
+        0.013f,
         0.0f,
         0.f,
-        15.0f,
+        44.0f,
         0.001f,
         0.0f,
         0.0f,
         0.0f,
-        0.0f  
+        0.0f,
+        PID_D_First_DISABLE,
+        0.01
     );
     // yaw轴速度环pid
     yaw_omega_pid_.Init(
-        0.725f,
-        0.0002f,
+        0.4f,
+        0.008f,
         0.0f,
         0.0f,
         0.0f,
-        10.f,
+        9.9f,
         0.001f,
         0.0f,
         0.0f,
         0.0f,
-        0.0f  
+        0.0f,
+        PID_D_First_DISABLE,
+        0.01
+         
     );
     // yaw轴速度环滤波器
     yaw_omega_filter_.Init(15.0f, 0.001f);
@@ -112,6 +117,15 @@ void Gimbal::TaskEntry(void *argument)
 }
 
 /**
+ * @brief Gimbal退出函数
+ * 
+ */
+void Gimbal::Exit()
+{
+    motor_yaw_.SetControlTorque(0);
+}
+
+/**
  * @brief Gimbal自身解算函数
  *
  */
@@ -137,6 +151,7 @@ void Gimbal::SelfResolution()
 
     // 设定目标力矩
     SetTargetYawTorque(yaw_omega_pid_.GetOut());
+    // printf("%f,%f,%f\n", yaw_angle_diff_, yaw_angle_pid_.GetOut(), yaw_omega_pid_.GetOut());
 }
 
 /**

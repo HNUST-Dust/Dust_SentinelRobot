@@ -451,14 +451,19 @@ protected:
     
     // 电机控制方式
     MotorDmControlMethod motor_dm_control_method_ = MOTOR_DM_CONTROL_METHOD_1_TO_4_ANGLE;
+
     // 目标的角度
     float target_angle_ = 0.0f;
+
     // 目标的速度, rad/s
     float target_omega_ = 0.0f;
+
     // 目标的电流, A
     float target_current_ = 0.0f;
+
     // 前馈的速度, rad/s
     float feedforward_omega_ = 0.0f;
+    
     // 前馈的电流, A
     float feedforward_current_ = 0.0f;
 

@@ -14,87 +14,104 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include "bsp_can.h"
+#include "alg_math.h"
+#include "cmsis_os2.h"
+#include "user_lib.h"
+#include "stdio.h"
 
 /* Exported macros -----------------------------------------------------------*/
 
 /* Exported types ------------------------------------------------------------*/
 
 /**
- * @brief 超级电容状态
- * @note  包含工作状态和充放电状态
- */
-enum SupercapStatus
-{
-    SUPERCAP_STATUS_DISABLE = 0,
-    SUPERCAP_STATUS_ENABLE = 1,
-    SUPERCAP_STATUS_CHARGE = 1,
-    SUPERCAP_STATUS_DISCHARGE = 0,
-};
-
-/**
- * @brief 超级电容状态码
+ * @brief Supercap开关状态枚举
  * 
  */
-enum SupercapStatusCode
+enum SupercapSwitchStatus
 {
-    DISCHARGE             = 0,     // 放电
-    CHARGE                = 1,     // 充电
-    WAIT                  = 2,     // 待机 
-    SOFRSTART_PROTECTION  = 3,     // 软启动保护
-    OCP_PROTECTION        = 4,     // 过流保护
-    OVP_BAT_PROTECTION    = 5,     // 电池过压保护
-    UVP_BAT_PROTECTION    = 6,     // 电池欠压保护
-    UVP_CAP_PROTECTION    = 7,     // 电容欠压保护
-    OTP_PROTECTION        = 8,     // 过温保护
+    SUPERCAP_STATUS_SWITCH_DISABLE = 0,
+    SUPERCAP_STATUS_SWITCH_ENABLE = 1,
 };
 
 /**
- * @brief 超级电容接收数据
- * @note 200Hz频率，可调
+ * @brief Supercap记录状态枚举
+ * 
+ */
+enum SupercapRecordStatus
+{
+    SUPERCAP_STATUS_RECORD_DISABLE = 0,
+    SUPERCAP_STATUS_RECORD_ENABLE = 1,
+};
+
+/**
+ * @brief Supercap状态码联合体
+ * 
+ */
+union SupercapStatusCode
+{
+    uint16_t all;
+    struct
+    {
+        uint16_t warning : 1;               //报警
+        uint16_t cap_v_over : 1;            //电容过压
+        uint16_t cap_i_over : 1;            //电容过流
+        uint16_t cap_v_low : 1;             //电容欠压
+        uint16_t bat_v_low : 1;             //裁判系统欠压
+        uint16_t can_receive_miss : 1;      //未读到CAN通信数据
+    } status;
+};
+
+/**
+ * @brief Supercap控制联合体
+ * 
+ */
+union SupercapControl
+{
+    uint16_t all;
+    struct
+    {
+        uint16_t supercap_switch : 1;    //电容开关
+        uint16_t supercap_record : 1;    //记录功能开关
+    } control;
+};
+
+/**
+ * @brief Supercap接收数据结构体
+ * 
  */
 struct SupercapRecivedData
 {
-    SupercapStatus supercap_work_status;        // 超级电容可用状态
-    SupercapStatusCode supercap_status_code;    // 超级电容充放电状态
-    uint8_t supercap_energy_percent;            // 超级电容剩余能量百分比 0~100% 0%的时候会自动关闭
-    uint8_t chassis_compensate_power;           // 超级电容当前功率消耗 W 范围：0~255
-    uint8_t battery_voltage;                    // 电池电压 V，放大了10倍，
+    SupercapStatusCode supercap_status_code;
+    float supercap_voltage;
+    float supercap_current;
 };
 
 /**
- * @brief 超级电容发送数据
+ * @brief Supercap发送数据结构体
  * 
  */
 struct SupercapSendData
 {
-    SupercapStatus supercap_enable_status;        // 超级电容工作状态
-    SupercapStatus supercap_charge_status;        // 超级电容充放电状态
-    uint8_t power_limit_max;                      // 底盘功率限制 W
-    uint8_t charge_power;                         // 充电功率 W
+    uint16_t chassis_power_buffer;      //底盘功率缓冲
+    uint16_t chassis_power_limit;       //机器人底盘功率限制上限
+    int16_t discharge_power_limit;      //电容放电功率限制
+    uint16_t charge_power_limit;        //电容充电功率限制
+    SupercapControl supercap_control;
 };
 
+/**
+ * @brief Supercap类
+ * 
+ */
 class Supercap
 {
 public:
-    void Init(CAN_HandleTypeDef *hcan, uint16_t can_rx_id = 0x030, uint16_t can_tx_id1 = 0x02E, uint16_t can_tx_id2 = 0x02F);
+    void Init(CAN_HandleTypeDef *hcan, uint16_t can_rx_id = 0x030, uint16_t can_tx_id1 = 0x02E, uint16_t can_tx_id2 = 0x02F,
+              uint16_t chassis_power_limit = 55, uint16_t chassis_power_buffer = 50, int16_t discharge_power_limit = 50, 
+              uint16_t charge_power_limit = 50, SupercapSwitchStatus switch_status = SUPERCAP_STATUS_SWITCH_ENABLE, 
+              SupercapRecordStatus record_status = SUPERCAP_STATUS_RECORD_DISABLE);
 
-    inline SupercapStatus GetWorkStatus();
-    
-    inline SupercapStatusCode GetStatusCode();
-    
-    inline uint8_t GetEnergyPercent();
-
-    inline uint8_t GetChassisCompensatePower();
-
-    inline uint8_t GetBatteryVoltage();
-
-    inline void SetEnableStatus(SupercapStatus supercap_enable_status);
-
-    inline void SetChargeStatus(SupercapStatus supercap_charge_status);
-
-    inline void SetPowerLimitMax(uint8_t power_limit_max);
-
-    inline void SetChargePower(uint8_t charge_power);
+    void Task();
 
     void CanRxCpltCallback(uint8_t *rx_data);
 
@@ -102,7 +119,24 @@ public:
 
     void SendPeriodElapsedCallback();
 
-    void Task();
+    inline void SetChassisPowerBuffer(uint16_t chassis_power_buffer);
+
+    inline void SetChassisPowerLimit(uint16_t chassis_power_limit);
+
+    inline void SetDischargePowerLimit(int16_t discharge_power_limit);
+
+    inline void SetChargePowerLimit(uint16_t charge_power_limit);
+
+    inline void SetSupercapSwitchStatus(SupercapSwitchStatus supercap_switch_status);
+
+    inline void SetSupercapRecordStatus(SupercapRecordStatus supercap_record_status);
+
+    inline float GetSupercapVoltage();
+
+    inline float GetSupercapCurrent();
+
+    inline uint16_t GetSupercapStatus();
+
 protected:
     // CAN管理模块
     CanManageObject *can_manage_object_ = nullptr;
@@ -114,44 +148,32 @@ protected:
     uint16_t can_tx_id1_ = 0x02E;
     uint16_t can_tx_id2_ = 0x02F;
 
-    // 超电接收数据
-    SupercapRecivedData recived_data_ = {};
-
     // 当前时刻flag
     uint32_t flag_ = 0;
 
     // 前一时刻flag
     uint32_t pre_flag_ = 0;
 
-    // 发送给超级电容的使能/失能状态
-    SupercapStatus supercap_enable_status_ = SUPERCAP_STATUS_DISABLE;
+    // 超电接收数据
+    SupercapRecivedData received_data_;
+
+    // 超电发送数据（未用）
+    // SupercapSendData send_data_;
+
+    // 底盘功率缓冲
+    uint16_t chassis_power_buffer_;
+
+    // 机器人底盘功率限制上限
+    uint16_t chassis_power_limit_;
+
+    // 超电放电功率限制
+    int16_t discharge_power_limit_;
+
+    // 超电充电功率限制
+    uint16_t charge_power_limit_;     
     
-    // 接收到的超级电容真实的工作状态
-    SupercapStatus supercap_work_status_ = SUPERCAP_STATUS_DISABLE;
-
-    // 超级电容充放电状态
-    SupercapStatus supercap_charge_status_ = SUPERCAP_STATUS_CHARGE;
-    
-    // 超级电容状态码
-    SupercapStatusCode supercap_status_code_ = {};
-
-    // 底盘功率上限
-    uint8_t power_limit_max_ = 0;
-    
-    // 充电功率
-    uint8_t charge_power_ = 0;
-    
-    // 超级电容剩余能量百分比
-    uint8_t supercap_energy_percent_ = 0;
-
-    // 底盘消耗功率
-    uint8_t chassis_power_ = 0;
-
-    // 电池电压
-    uint8_t battery_voltage_ = 0;
-
-    // 超级电容可以补偿的最大功率值
-    uint8_t power_compensate_max_ = 150.0f;
+    // 超电控制
+    SupercapControl supercap_control_;
 
     void DataProcess();
 
@@ -165,93 +187,94 @@ protected:
 /* Exported function declarations --------------------------------------------*/
 
 /**
- * @brief 获取超级电容在线状态
- *
- * @return uint8_t 超级电容在线状态
+ * @brief Supercap设置底盘功率缓冲函数
+ * 
+ * @param chassis_power_buffer 底盘功率缓冲值
  */
-inline SupercapStatus Supercap::GetWorkStatus()
+inline void Supercap::SetChassisPowerBuffer(uint16_t chassis_power_buffer)
 {
-    return (recived_data_.supercap_work_status);
+    chassis_power_buffer_ = chassis_power_buffer;
 }
 
 /**
- * @brief 获取超级电容状态码
+ * @brief Supercap设置底盘功率限制函数
  * 
- * @return SupercapStatusCode 
+ * @param chassis_power_limit 底盘功率限制值
  */
-inline SupercapStatusCode Supercap::GetStatusCode()
+inline void Supercap::SetChassisPowerLimit(uint16_t chassis_power_limit)
 {
-    return (recived_data_.supercap_status_code);
+    chassis_power_limit_ = chassis_power_limit;
 }
 
 /**
- * @brief 获取超级电容剩余能量百分比
+ * @brief Supercap设置放电功率限制函数
  * 
- * @return uint8_t 
+ * @param discharge_power_limit 放电功率限制值
  */
-inline uint8_t Supercap::GetEnergyPercent()
+inline void Supercap::SetDischargePowerLimit(int16_t discharge_power_limit)
 {
-    return (recived_data_.supercap_energy_percent);
+    discharge_power_limit_ = discharge_power_limit;
 }
 
 /**
- * @brief 获取底盘消耗功率
+ * @brief Supercap设置充电功率限制函数
  * 
- * @return uint8_t 
+ * @param charge_power_limit 充电功率限制值
  */
-inline uint8_t Supercap::GetChassisCompensatePower()
+inline void Supercap::SetChargePowerLimit(uint16_t charge_power_limit)
 {
-    return (recived_data_.chassis_compensate_power);
+    charge_power_limit_ = charge_power_limit;
 }
 
 /**
- * @brief 获取电池电压
+ * @brief Supercap设置开关状态函数
  * 
- * @return uint8_t 
+ * @param supercap_switch_status 开关状态值
  */
-inline uint8_t Supercap::GetBatteryVoltage()
+inline void Supercap::SetSupercapSwitchStatus(SupercapSwitchStatus supercap_switch_status)
 {
-    return (recived_data_.battery_voltage);
+    supercap_control_.control.supercap_switch = supercap_switch_status;
 }
 
 /**
- * @brief 设置超级电容使能状态
+ * @brief Supercap设置记录状态函数
  * 
- * @param supercap_enable_status 
+ * @param supercap_record_status 记录状态值
  */
-inline void Supercap::SetEnableStatus(SupercapStatus supercap_enable_status)
+inline void Supercap::SetSupercapRecordStatus(SupercapRecordStatus supercap_record_status)
 {
-    supercap_enable_status_ = supercap_enable_status;
+    supercap_control_.control.supercap_record = supercap_record_status;
 }
 
 /**
- * @brief 设置超级电容充放电状态
+ * @brief Supercap获取电压函数
  * 
- * @param supercap_charge_status 
+ * @return float 电压值
  */
-inline void Supercap::SetChargeStatus(SupercapStatus supercap_charge_status)
+inline float Supercap::GetSupercapVoltage()
 {
-    supercap_charge_status_ = supercap_charge_status;
+    return (received_data_.supercap_voltage);
 }
 
 /**
- * @brief 设置底盘功率上限
+ * @brief Supercap获取电流函数
  * 
- * @param power_limit_max 
+ * @return float 电流值
  */
-inline void Supercap::SetPowerLimitMax(uint8_t power_limit_max)
+inline float Supercap::GetSupercapCurrent()
 {
-    power_limit_max_ = power_limit_max;
+    return (received_data_.supercap_current);
 }
 
 /**
- * @brief 设置充电功率
+ * @brief Supercap获取状态函数
  * 
- * @param charge_power 
+ * @return uint16_t 状态位
  */
-inline void Supercap::SetChargePower(uint8_t charge_power)
+inline uint16_t Supercap::GetSupercapStatus()
 {
-    charge_power_ = charge_power;
+    return (received_data_.supercap_status_code.all);
 }
+
 
 #endif // !DEVICE_SUPERCAP_H_

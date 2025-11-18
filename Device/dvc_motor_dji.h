@@ -114,7 +114,6 @@ struct MotorDjiRxData
 class MotorDjiC620
 {
 public:
-    float out_ = 0.0f;
     // PID角度环控制
     Pid pid_angle_;
     // PID角速度环控制
@@ -166,6 +165,8 @@ public:
 
     inline float GetFeedforwardCurrent();
 
+    inline float GetOut();
+
     inline void SetControlMethod(MotorDjiControlMethod motor_dji_control_method);
 
     inline void SetTargetAngle(float target_angle);
@@ -194,14 +195,19 @@ protected:
 
     // 绑定的CAN
     CanManageObject *can_manage_object_;
+
     // 收数据绑定的CAN ID, C6系列0x201~0x208, GM系列0x205~0x20b
     MotorDjiId can_rx_id_;
+
     // 发送缓存区
     uint8_t *tx_data_;
+
     // 减速比, 默认带减速箱
     float gearbox_rate_;
+
     // 是否开启功率控制
     MotorDjiPowerLimitStatus power_limit_status_;
+
     // 最大电流
     float current_max_;
 
@@ -228,7 +234,7 @@ protected:
     // 前一时刻的电机接收flag
     uint32_t pre_flag_ = 0;
     // 输出量
-    // float out_ = 0.0f;
+    float out_ = 0.0f;
 
     // 读变量
 
@@ -581,6 +587,16 @@ inline float MotorDjiC620::GetFeedforwardOmega()
 inline float MotorDjiC620::GetFeedforwardCurrent()
 {
     return (feedforward_current_);
+}
+
+/**
+ * @brief 获取pid输出值
+ * 
+ * @return float pid输出值
+ */
+inline float MotorDjiC620::GetOut()
+{
+    return (out_);
 }
 
 /**

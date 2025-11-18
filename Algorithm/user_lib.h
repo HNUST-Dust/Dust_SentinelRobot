@@ -87,7 +87,7 @@ extern uint8_t GlobalDebugMode;
 #define VAL_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define VAL_MAX(a, b) ((a) > (b) ? (a) : (b))
 
-typedef struct
+struct ramp_function_source_t
 {
     float input;        //输入数据
     float out;          //输出数据
@@ -95,7 +95,7 @@ typedef struct
     float max_value;    //限幅最大值
     float frame_period; //时间间隔
     uint8_t is_completed = 1; //斜坡完成标志位
-} ramp_function_source_t;
+};
 
 typedef struct __attribute__((__packed__))
 {
@@ -149,5 +149,8 @@ float OLS_Derivative(Ordinary_Least_Squares_t *OLS, float deltax, float y);
 float OLS_Smooth(Ordinary_Least_Squares_t *OLS, float deltax, float y);
 float Get_OLS_Derivative(Ordinary_Least_Squares_t *OLS);
 float Get_OLS_Smooth(Ordinary_Least_Squares_t *OLS);
+
+int16_t float_to_int16(float a, float a_max, float a_min, int16_t b_max, int16_t b_min);
+float int16_to_float(int16_t a, int16_t a_max, int16_t a_min, float b_max, float b_min);
 
 #endif

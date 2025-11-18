@@ -46,8 +46,8 @@ void Robot::Init()
     chassis_.Init();
     // 拨弹盘初始化
     reload_.Init();
-    // 超级电容初始化
-    supercap_.Init(&hcan1, 0x02E, 0x030);
+    // 超级电容初始化 
+    // supercap_.Init(&hcan1);
 
     static const osThreadAttr_t kRobotTaskAttr = 
     {
@@ -131,7 +131,7 @@ void Robot::Task()
         chassis_.SetTargetVxInGimbal((mcu_chassis_data_local.chassis_speed_x * K + C) * MAX_OMEGA_SPEED);
         chassis_.SetTargetVyInGimbal((mcu_chassis_data_local.chassis_speed_y * K + C) * MAX_OMEGA_SPEED);
 
-        
+
         /****************************   模式   ****************************/
 
         

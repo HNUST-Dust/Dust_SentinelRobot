@@ -36,7 +36,8 @@ void Pid::Init(
     float i_variable_speed_A, 
     float i_variable_speed_B, 
     float i_separate_threshold, 
-    enum DFirst d_first)
+    enum DFirst d_first,
+    float d_lpf_tau)
 {
     k_p_ = k_p;
     k_i_ = k_i;
@@ -50,6 +51,7 @@ void Pid::Init(
     i_variable_speed_B_ = i_variable_speed_B;
     i_separate_threshold_ = i_separate_threshold;
     d_first_ = d_first;
+    d_lpf_tau_ = d_lpf_tau;
 }
 
 /**
@@ -208,12 +210,15 @@ void Pid::CalculatePeriodElapsedCallback()
     // F输出
     float f_out = 0.0f;
     // 误差
-    float error;
+    float error = 0.0f;
     // 绝对值误差
-    float abs_error;
+    float abs_error = 0.0f;
     // 线性变速积分
-    float speed_ratio;
+    float speed_ratio = 0.0f;
 
+    float d_raw = 0.0f;  // 未滤波的微分信号
+    float alpha = 0.0f;  // 滤波系数
+    
     error = target_ - now_;
     abs_error = math_abs(error);
 
@@ -253,7 +258,11 @@ void Pid::CalculatePeriodElapsedCallback()
         }
         else if (i_variable_speed_A_ < abs_error && abs_error < i_variable_speed_B_)
         {
-            speed_ratio = (i_variable_speed_B_ - abs_error) / (i_variable_speed_B_ - i_variable_speed_A_);
+            if(i_variable_speed_B_ == i_variable_speed_A_){
+                speed_ratio = 0.0f;
+            }else{
+                speed_ratio = (i_variable_speed_B_ - abs_error) / (i_variable_speed_B_ - i_variable_speed_A_);
+            }
         }
         else if (abs_error >= i_variable_speed_B_)
         {
@@ -261,14 +270,16 @@ void Pid::CalculatePeriodElapsedCallback()
         }
     }
     // 积分限幅
-    if (i_out_max_ != 0.0f)
+    if (i_out_max_ != 0.0f && k_i_ != 0.0f)
     {
         math_constrain(&integral_error_, -i_out_max_ / k_i_, i_out_max_ / k_i_);
     }
     if (i_separate_threshold_ == 0.0f)
     {
         // 没有积分分离
-        integral_error_ += speed_ratio * d_t_ * error;
+        if(isnanf(error)) { error = pre_error_ ; }
+        if(isnanf(error)) { integral_error_ = 0.0f; } 
+        integral_error_ = speed_ratio * d_t_ * error;
         i_out = k_i_ * integral_error_;
     }
     else
@@ -277,6 +288,8 @@ void Pid::CalculatePeriodElapsedCallback()
         if (abs_error < i_separate_threshold_)
         {
             // 不在积分分离区间上
+            if(isnanf(error)) { error = pre_error_ ; }
+            if(isnanf(error)) { integral_error_ = 0.0f; } 
             integral_error_ += speed_ratio * d_t_ * error;
             i_out = k_i_ * integral_error_;
         }
@@ -292,13 +305,24 @@ void Pid::CalculatePeriodElapsedCallback()
 
     if (d_first_ == PID_D_First_DISABLE)
     {
-        // 没有微分先行
-        d_out = k_d_ * (error - pre_error_) / d_t_;
+        d_raw = k_d_ * (error - pre_error_) / d_t_;
     }
     else
     {
-        // 微分先行使能
-        d_out = -k_d_ * (now_ - pre_now_) / d_t_;
+        d_raw = -k_d_ * (now_ - pre_now_) / d_t_;
+    }
+
+    // 一阶低通滤波器: y_k = α*y_{k-1} + (1-α)*x_k
+    if (d_lpf_tau_ > 0.0f)
+    {
+        alpha = d_lpf_tau_ / (d_lpf_tau_ + d_t_);
+        d_out = alpha * d_lpf_output_ + (1.0f - alpha) * d_raw;
+        d_lpf_output_ = d_out;  // 更新滤波输出缓存
+    }
+    else
+    {
+        // 没设滤波常数则直接用原始值
+        d_out = d_raw;
     }
 
     // 计算前馈
@@ -306,9 +330,8 @@ void Pid::CalculatePeriodElapsedCallback()
     f_out = k_f_ * (target_ - pre_target_);
 
     // 计算输出
-    // 积分项计算存在内存问题，暂时关闭积分项！！注意！！
-    //Out = p_out + i_out + d_out + f_out;
-    out_ = p_out + d_out + f_out;
+    out_ = p_out + i_out + d_out + f_out;
+
     // 输出限幅
     if (out_max_ != 0.0f)
     {
@@ -316,6 +339,149 @@ void Pid::CalculatePeriodElapsedCallback()
     }
 
     // 善后工作
+    pre_now_ = now_;
+    pre_target_ = target_;
+    pre_out_ = out_;
+    pre_error_ = error;
+}
+
+/**
+ * @brief 带角度过零处理（劣弧解算）的 PID 计算函数
+ *
+ * @note 适用于输入为角度（范围 -π ~ π）的云台位置环
+ *       输出为角速度或电流
+ */
+void Pid::CalculateAnglePid()
+{
+    float p_out = 0.0f;
+    float i_out = 0.0f;
+    float d_out = 0.0f;
+    float f_out = 0.0f;
+    float error;
+    float abs_error;
+    float speed_ratio;
+
+    /*----------------------------------------
+     * 1. 劣弧角度差计算 (-π, π)
+     *----------------------------------------*/
+    error = target_ - now_;
+
+    if (error > M_PI)
+        error -= 2.0f * M_PI;
+    else if (error < -M_PI)
+        error += 2.0f * M_PI;
+
+    abs_error = math_abs(error);
+
+    /*----------------------------------------
+     * 2. 死区判断
+     *----------------------------------------*/
+    if (abs_error < dead_zone_)
+    {
+        target_ = now_;
+        error = 0.0f;
+        abs_error = 0.0f;
+    }
+    else if (error > 0.0f && abs_error > dead_zone_)
+    {
+        error -= dead_zone_;
+    }
+    else if (error < 0.0f && abs_error > dead_zone_)
+    {
+        error += dead_zone_;
+    }
+
+    /*----------------------------------------
+     * 3. P项
+     *----------------------------------------*/
+    p_out = k_p_ * error;
+
+    /*----------------------------------------
+     * 4. I项（带变速积分 + 可选积分清零）
+     *----------------------------------------*/
+    if (i_variable_speed_A_ == 0.0f && i_variable_speed_B_ == 0.0f)
+    {
+        speed_ratio = 1.0f;
+    }
+    else
+    {
+        if (abs_error <= i_variable_speed_A_)
+        {
+            speed_ratio = 1.0f;
+        }
+        else if (i_variable_speed_A_ < abs_error && abs_error < i_variable_speed_B_)
+        {
+            speed_ratio = (i_variable_speed_B_ - abs_error) /
+                          (i_variable_speed_B_ - i_variable_speed_A_);
+        }
+        else
+        {
+            speed_ratio = 0.0f;
+        }
+    }
+
+    // 积分限幅
+    if (i_out_max_ != 0.0f)
+    {
+        math_constrain(&integral_error_, -i_out_max_ / k_i_, i_out_max_ / k_i_);
+    }
+
+    // 当输出饱和或误差反向时清零（防卡角）
+    if ((out_ >= out_max_ || out_ <= -out_max_) ||
+        ((pre_error_ > 0 && error < 0) || (pre_error_ < 0 && error > 0)))
+    {
+        integral_error_ = 0.0f;
+    }
+
+    if (i_separate_threshold_ == 0.0f)
+    {
+        integral_error_ += speed_ratio * d_t_ * error;
+        i_out = k_i_ * integral_error_;
+    }
+    else
+    {
+        if (abs_error < i_separate_threshold_)
+        {
+            integral_error_ += speed_ratio * d_t_ * error;
+            i_out = k_i_ * integral_error_;
+        }
+        else
+        {
+            integral_error_ = 0.0f;
+            i_out = 0.0f;
+        }
+    }
+
+    /*----------------------------------------
+     * 5. D项
+     *----------------------------------------*/
+    if (d_first_ == PID_D_First_DISABLE)
+    {
+        d_out = k_d_ * (error - pre_error_) / d_t_;
+    }
+    else
+    {
+        d_out = -k_d_ * (now_ - pre_now_) / d_t_;
+    }
+
+    /*----------------------------------------
+     * 6. F项（前馈）
+     *----------------------------------------*/
+    f_out = k_f_ * (target_ - pre_target_);
+
+    /*----------------------------------------
+     * 7. 输出合成与限幅
+     *----------------------------------------*/
+    out_ = p_out + i_out + d_out + f_out;
+
+    if (out_max_ != 0.0f)
+    {
+        math_constrain(&out_, -out_max_, out_max_);
+    }
+
+    /*----------------------------------------
+     * 8. 善后
+     *----------------------------------------*/
     pre_now_ = now_;
     pre_target_ = target_;
     pre_out_ = out_;

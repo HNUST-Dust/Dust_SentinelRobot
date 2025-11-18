@@ -394,3 +394,16 @@ float Get_OLS_Smooth(Ordinary_Least_Squares_t *OLS)
 {
     return OLS->k * OLS->x[OLS->Order - 1] + OLS->b;
 }
+
+
+int16_t float_to_int16(float a, float a_max, float a_min, int16_t b_max, int16_t b_min)
+{
+    int16_t b = (a - a_min) / (a_max - a_min) * (float)(b_max - b_min) + (float)b_min + 0.5f;
+    return b;
+}
+
+float int16_to_float(int16_t a, int16_t a_max, int16_t a_min, float b_max, float b_min)
+{
+    float b = (float)(a - a_min) / (float)(a_max - a_min) * (b_max - b_min) + b_min;
+    return b;
+}

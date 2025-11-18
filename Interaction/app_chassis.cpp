@@ -42,10 +42,10 @@ void Chassis::Init()
         0.0f  
     );
     // 底盘3508电机初始化
-    motor_chassis_1_.pid_omega_.Init(2.0f,0.2f,0.0003f);
-    motor_chassis_2_.pid_omega_.Init(2.0f,0.2f,0.0003f);
-    motor_chassis_3_.pid_omega_.Init(2.0f,0.2f,0.0003f);
-    motor_chassis_4_.pid_omega_.Init(2.0f,0.2f,0.0003f);
+    motor_chassis_1_.pid_omega_.Init(2.0f,0.f,0.0003f);
+    motor_chassis_2_.pid_omega_.Init(2.0f,0.f,0.0003f);
+    motor_chassis_3_.pid_omega_.Init(2.0f,0.f,0.0003f);
+    motor_chassis_4_.pid_omega_.Init(2.0f,0.f,0.0003f);
 
     motor_chassis_1_.Init(&hcan1, MOTOR_DJI_ID_0x201, MOTOR_DJI_CONTROL_METHOD_OMEGA);
     motor_chassis_2_.Init(&hcan1, MOTOR_DJI_ID_0x202, MOTOR_DJI_CONTROL_METHOD_OMEGA);
@@ -133,7 +133,7 @@ void Chassis::Task()
         // 输出
         OutputToMotor();
 
-        osDelay(pdMS_TO_TICKS(10));
+        osDelay(pdMS_TO_TICKS(1));
     }
 }
 

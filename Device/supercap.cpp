@@ -11,8 +11,6 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include "supercap.h"
-#include "bsp_can.h"
-#include "cmsis_os.h"
 
 /* Private macros ------------------------------------------------------------*/
 
@@ -29,9 +27,18 @@
  * 
  * @param hcan 
  * @param can_rx_id 
- * @param can_tx_id 
+ * @param can_tx_id1 
+ * @param can_tx_id2 
+ * @param chassis_power_limit 
+ * @param chassis_power_buffer 
+ * @param discharge_power_limit 
+ * @param charge_power_limit 
+ * @param switch_status 
+ * @param record_status 
  */
-void Supercap::Init(CAN_HandleTypeDef *hcan, uint16_t can_rx_id, uint16_t can_tx_id1, uint16_t can_tx_id2)
+void Supercap::Init(CAN_HandleTypeDef *hcan, uint16_t can_rx_id, uint16_t can_tx_id1, uint16_t can_tx_id2, 
+                    uint16_t chassis_power_limit, uint16_t chassis_power_buffer, int16_t discharge_power_limit, 
+                    uint16_t charge_power_limit, SupercapSwitchStatus switch_status, SupercapRecordStatus record_status)
 {
     if (hcan->Instance == CAN1)
     {
@@ -45,9 +52,18 @@ void Supercap::Init(CAN_HandleTypeDef *hcan, uint16_t can_rx_id, uint16_t can_tx
     can_tx_id1_ = can_tx_id1;
     can_tx_id2_ = can_tx_id2;
 
-    power_limit_max_ = 55;
-    power_compensate_max_ = 50;
-    supercap_enable_status_ = SUPERCAP_STATUS_ENABLE;
+    // 设置底盘功率限制
+    chassis_power_limit_ = chassis_power_limit;
+    // 设置底盘功率缓冲
+    chassis_power_buffer_ = chassis_power_buffer;
+    // 放电功率限制
+    discharge_power_limit_ = discharge_power_limit;
+    // 充电功率限制
+    charge_power_limit_ = chassis_power_limit;
+
+    // 设置超电状态
+    supercap_control_.control.supercap_switch = switch_status;
+    supercap_control_.control.supercap_record = record_status;
 
     static const osThreadAttr_t kSupercapTaskAttr = {
         .name = "supercap_task",
@@ -56,7 +72,6 @@ void Supercap::Init(CAN_HandleTypeDef *hcan, uint16_t can_rx_id, uint16_t can_tx
     };
     // 启动任务，将 this 传入
     osThreadNew(Supercap::TaskEntry, this, &kSupercapTaskAttr);
-
 }
 
 // 任务入口（静态函数）—— osThreadNew 需要这个原型
@@ -93,13 +108,15 @@ void Supercap::AlivePeriodElapsedCallback()
  */
 void Supercap::DataProcess()
 {
-    SupercapRecivedData *temp_buffer = (SupercapRecivedData *)can_manage_object_->rx_buffer.data;
+    uint8_t* temp_buffer = can_manage_object_->rx_buffer.data;
 
-    recived_data_.supercap_work_status = temp_buffer->supercap_work_status;
-    recived_data_.supercap_status_code = temp_buffer->supercap_status_code;
-    recived_data_.supercap_energy_percent = temp_buffer->supercap_energy_percent;
-    recived_data_.chassis_compensate_power = temp_buffer->chassis_compensate_power;
-    recived_data_.battery_voltage = temp_buffer->battery_voltage;
+    int16_t v_code = (int16_t)(temp_buffer[0] << 8 | temp_buffer[1]);
+    int16_t i_code = (int16_t)(temp_buffer[2] << 8 | temp_buffer[3]);
+    uint16_t all  = (uint16_t)(temp_buffer[4] << 8 | temp_buffer[5]);
+
+    received_data_.supercap_voltage = int16_to_float(v_code, 32000, -32000, 30, 0);
+    received_data_.supercap_current = int16_to_float(i_code, 32000, -32000, 20, -20);
+    received_data_.supercap_status_code.all = all;
 }
 
 /**
@@ -109,24 +126,26 @@ void Supercap::DataProcess()
 void Supercap::SendPeriodElapsedCallback()
 {
     uint8_t temp_buffer[8];
-    temp_buffer[0] = 0;
-    temp_buffer[1] = 0;
+    temp_buffer[0] =  chassis_power_buffer_ >> 8;
+    temp_buffer[1] = (uint8_t)chassis_power_buffer_;
     temp_buffer[2] = 0;
     temp_buffer[3] = 0;
     temp_buffer[4] = 0;
     temp_buffer[5] = 0;
     temp_buffer[6] = 0;
     temp_buffer[7] = 0;
+
     can_send_data(can_manage_object_->can_handler, can_tx_id1_, temp_buffer, 8);
 
-    temp_buffer[0] = 0;
-    temp_buffer[1] = 0;
-    temp_buffer[2] = 0;
-    temp_buffer[3] = 0;
-    temp_buffer[4] = 0;
-    temp_buffer[5] = 0;
-    temp_buffer[6] = 0;
-    temp_buffer[7] = 0;
+    temp_buffer[0] = chassis_power_limit_ >> 8;
+    temp_buffer[1] = (uint8_t)chassis_power_limit_;
+    temp_buffer[2] = discharge_power_limit_ >> 8;
+    temp_buffer[3] = (uint8_t)discharge_power_limit_;
+    temp_buffer[4] = charge_power_limit_ >> 8;
+    temp_buffer[5] = (uint8_t)charge_power_limit_;
+    temp_buffer[6] = supercap_control_.all >> 8;
+    temp_buffer[7] = (uint8_t)supercap_control_.all;
+    
     can_send_data(can_manage_object_->can_handler, can_tx_id2_, temp_buffer, 8);
 }
 
@@ -143,4 +162,6 @@ void Supercap::Task()
         osDelay(pdMS_TO_TICKS(10));
     }
 }
+
+
 /************************ COPYRIGHT(C) HNUST-DUST **************************/
