@@ -12,9 +12,6 @@
 
 #include "Init.h"
 #include "Robot.h"
-#include "bsp_uart.h"
-#include "bsp_usb.h"
-#include "usart.h"
 
 /* Private macros ------------------------------------------------------------*/
 
@@ -70,7 +67,22 @@ void can1_callback_function(CanRxBuffer* CAN_RxMessage)
             robot_.reload_.motor_reload_1_.CanRxCpltCallback(CAN_RxMessage->data);
             break;
         }
+        case (0x030):
+        {
+            robot_.supercap_.CanRxCpltCallback(CAN_RxMessage->data);
+        }
     }
+}
+
+/**
+ * @brief remote回调函数
+ * 
+ * @param buffer 
+ * @param length 
+ */
+void uart3_callback_function(uint8_t* buffer, uint16_t length) 
+{	
+	robot_.remote_.UartRxCpltCallback(buffer);
 }
 
 /**

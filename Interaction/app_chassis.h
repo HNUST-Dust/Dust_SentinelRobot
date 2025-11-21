@@ -40,37 +40,83 @@ public:
 
     void Task();
 
-    inline void SetNowYawAngleDiff(float now_yawdiff);
-
     inline void SetTargetVxInGimbal(float target_velocity_x);
 
     inline void SetTargetVyInGimbal(float target_velocity_y);
 
     inline void SetTargetVelocityRotation(float target_velocity_rotation);
 
+    inline void SetNowYawAngleDiff(float now_yawdiff);
+
+    inline void SetMaxAccelXY(float max_accel_xy);
+
+    inline void SetMaxAccelR(float max_accel_r);
+
 protected:
+// 底盘速度参数
+
     // 云台坐标系目标速度
+
     float target_vx_in_gimbal_ = 0.0f;
     
     float target_vy_in_gimbal_ = 0.0f;
 
     // 底盘坐标系目标速度
+
     float target_vx_in_chassis_ = 0.0f;
 
     float target_vy_in_chassis_ = 0.0f;
 
     // 目标速度 旋转
+
     float target_velocity_rotation_ = 0.0f;
 
-    // 旋转矩阵参数
+// 旋转矩阵参数
+
     float now_yawdiff_ = 0.0f;
 
     float cos_theta_ = 1.0f;
     
     float sin_theta_ = 0.0f;
 
-    // 驱动
+// 斜坡规划参数
+
+    // xyr轴最大加速度
+
+    float max_accel_xy_ = 150.f;
+
+    float max_accel_r_  = 150.f;
+
+    // xyr轴最大减速度
+    float max_decel_xy_ = -200.f;
+
+    float max_decel_r_  = -200.f;
+
+    // xyr当前加速度
+
+    float now_accel_x_ = 0.0f;
+
+    float now_accel_y_ = 0.0f;
+
+    float now_accel_r_ = 0.0f;
+
+    // xyr上一次目标速度
+
+    float last_target_vx_ = 0.0f;
+
+    float last_target_vy_ = 0.0f;
+
+    float last_target_r_ = 0.0f;
+
+    // 底盘频率
+
+    float dt = 0.001;
+
+// 底盘驱动
+
     void KinematicsInverseResolution();
+
+    void SlopePlanning();
 
     void RotationMatrixTransform();
 
@@ -121,6 +167,16 @@ inline void Chassis::SetTargetVelocityRotation(float target_velocity_rotation)
 inline void Chassis::SetNowYawAngleDiff(float now_yawdiff)
 {
     now_yawdiff_ = now_yawdiff;
+}
+
+inline void Chassis::SetMaxAccelXY(float max_accel_xy)
+{
+    max_accel_xy_ = max_accel_xy;
+}
+
+inline void Chassis::SetMaxAccelR(float max_accel_r)
+{
+    max_accel_r = max_accel_r;
 }
 
 #endif // !APP_CHASSIS_H_

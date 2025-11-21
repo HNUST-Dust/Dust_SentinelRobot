@@ -61,8 +61,6 @@ public:
 
     void Task();
 
-    void Exit();
-
     inline float GetNowYawAngle();
 
     inline float GetNowYawOmega();

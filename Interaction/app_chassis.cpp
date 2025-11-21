@@ -11,7 +11,9 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include "app_chassis.h"
+#include "dvc_motor_dji.h"
 #include "stdio.h"
+#include <stdint.h>
 
 /* Private macros ------------------------------------------------------------*/
 
@@ -42,10 +44,10 @@ void Chassis::Init()
         0.0f  
     );
     // 底盘3508电机初始化
-    motor_chassis_1_.pid_omega_.Init(2.0f,0.f,0.0003f);
-    motor_chassis_2_.pid_omega_.Init(2.0f,0.f,0.0003f);
-    motor_chassis_3_.pid_omega_.Init(2.0f,0.f,0.0003f);
-    motor_chassis_4_.pid_omega_.Init(2.0f,0.f,0.0003f);
+    motor_chassis_1_.pid_omega_.Init(0.15f, 0.0f, 0.0f, 0.0f, 20.0f, 20.0f);
+    motor_chassis_2_.pid_omega_.Init(2.0f,0.f,0.0007f);
+    motor_chassis_3_.pid_omega_.Init(2.0f,0.f,0.0007f);
+    motor_chassis_4_.pid_omega_.Init(2.0f,0.f,0.0007f);
 
     motor_chassis_1_.Init(&hcan1, MOTOR_DJI_ID_0x201, MOTOR_DJI_CONTROL_METHOD_OMEGA);
     motor_chassis_2_.Init(&hcan1, MOTOR_DJI_ID_0x202, MOTOR_DJI_CONTROL_METHOD_OMEGA);
@@ -79,7 +81,7 @@ void Chassis::TaskEntry(void *argument)
 }
 
 /**
- * @brief Chassis旋转矩阵变化
+ * @brief Chassis旋转矩阵变换
  * 
  */
 void Chassis::RotationMatrixTransform()
@@ -88,6 +90,63 @@ void Chassis::RotationMatrixTransform()
     sin_theta_ = sinf(now_yawdiff_ * PI / 180.f);
     target_vx_in_chassis_ = cos_theta_ * target_vx_in_gimbal_ - sin_theta_ * target_vy_in_gimbal_;
     target_vy_in_chassis_ = sin_theta_ * target_vx_in_gimbal_ + cos_theta_ * target_vy_in_gimbal_;
+}
+
+/**
+ * @brief Chassis斜坡规划
+ * 
+ */
+void Chassis::SlopePlanning()
+{
+    now_accel_x_ = (target_vx_in_chassis_ - last_target_vx_) / dt;
+    now_accel_y_ = (target_vy_in_chassis_ - last_target_vy_) / dt;
+    now_accel_r_ = (target_velocity_rotation_ - last_target_r_) / dt;
+
+    if(fabs(now_accel_x_) > max_accel_xy_)
+    {
+        if(target_vx_in_chassis_ > last_target_vx_)
+        {
+            target_vx_in_chassis_ = (last_target_vx_ + max_accel_xy_ * dt) < target_vx_in_chassis_ ? 
+                                    (last_target_vx_ + max_accel_xy_ * dt) : target_vx_in_chassis_;
+        } 
+        else
+        {
+            target_vx_in_chassis_ = (last_target_vx_ - max_accel_xy_ * dt) > target_vx_in_chassis_ ? 
+                                    (last_target_vx_ - max_accel_xy_ * dt) : target_vx_in_chassis_;
+        }
+    }
+
+    if(fabs(now_accel_y_) > max_accel_xy_)
+    {
+        if(target_vy_in_chassis_ > last_target_vy_) 
+        {
+            target_vy_in_chassis_ = (last_target_vy_ + max_accel_xy_ * dt) < target_vy_in_chassis_ ? 
+                                    (last_target_vy_ + max_accel_xy_ * dt) : target_vy_in_chassis_;
+        } 
+        else
+        {
+            target_vy_in_chassis_ = (last_target_vy_ - max_accel_xy_ * dt) > target_vy_in_chassis_ ? 
+                                    (last_target_vy_ - max_accel_xy_ * dt) : target_vy_in_chassis_;
+        }
+    }
+
+    if(fabs(now_accel_r_) > max_accel_r_)
+    {
+        if(target_velocity_rotation_ > last_target_r_) 
+        {
+            target_velocity_rotation_ = (last_target_r_ + max_accel_r_ * dt) < target_velocity_rotation_ ? 
+                                        (last_target_r_ + max_accel_r_ * dt) : target_velocity_rotation_;
+        } 
+        else
+        {
+            target_velocity_rotation_ = (last_target_r_ - max_accel_r_ * dt) > target_velocity_rotation_ ? 
+                                        (last_target_r_ - max_accel_r_ * dt) : target_velocity_rotation_;
+        }
+    }
+
+    last_target_vx_ = target_vx_in_chassis_;
+    last_target_vy_ = target_vy_in_chassis_;
+    last_target_r_  = target_velocity_rotation_;
 }
 
 /**
@@ -126,13 +185,18 @@ void Chassis::Task()
 {
     for (;;)
     {
-        // 旋转矩阵转换
-        RotationMatrixTransform();
-        // 运动学解析
-        KinematicsInverseResolution();
-        // 输出
-        OutputToMotor();
-
+        // // 旋转矩阵转换
+        // RotationMatrixTransform();
+        // // 斜坡规划算法
+        // SlopePlanning();
+        // // 运动学解析
+        // KinematicsInverseResolution();
+        // // 输出
+        // OutputToMotor();
+        
+        motor_chassis_1_.CalculatePeriodElapsedCallback();
+        can_send_data(&hcan1, 0x200, g_can1_0x200_tx_data, 8);
+        
         osDelay(pdMS_TO_TICKS(1));
     }
 }

@@ -117,6 +117,9 @@ void Supercap::DataProcess()
     received_data_.supercap_voltage = int16_to_float(v_code, 32000, -32000, 30, 0);
     received_data_.supercap_current = int16_to_float(i_code, 32000, -32000, 20, -20);
     received_data_.supercap_status_code.all = all;
+    chassis_power_ = - received_data_.supercap_voltage * received_data_.supercap_current;
+
+    // printf("%f,%f,%f\n", received_data_.supercap_voltage, -received_data_.supercap_current, chassis_power_);
 }
 
 /**

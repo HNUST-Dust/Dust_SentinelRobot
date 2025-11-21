@@ -106,6 +106,9 @@ struct SupercapSendData
 class Supercap
 {
 public:
+    // 底盘功率
+    float chassis_power_ = 0.0f;
+
     void Init(CAN_HandleTypeDef *hcan, uint16_t can_rx_id = 0x030, uint16_t can_tx_id1 = 0x02E, uint16_t can_tx_id2 = 0x02F,
               uint16_t chassis_power_limit = 55, uint16_t chassis_power_buffer = 50, int16_t discharge_power_limit = 50, 
               uint16_t charge_power_limit = 50, SupercapSwitchStatus switch_status = SUPERCAP_STATUS_SWITCH_ENABLE, 
@@ -127,9 +130,9 @@ public:
 
     inline void SetChargePowerLimit(uint16_t charge_power_limit);
 
-    inline void SetSupercapSwitchStatus(SupercapSwitchStatus supercap_switch_status);
+    inline void SetSupercapCharge(SupercapSwitchStatus supercap_switch_status);
 
-    inline void SetSupercapRecordStatus(SupercapRecordStatus supercap_record_status);
+    inline void SetSupercapRecord(SupercapRecordStatus supercap_record_status);
 
     inline float GetSupercapVoltage();
 
@@ -231,7 +234,7 @@ inline void Supercap::SetChargePowerLimit(uint16_t charge_power_limit)
  * 
  * @param supercap_switch_status 开关状态值
  */
-inline void Supercap::SetSupercapSwitchStatus(SupercapSwitchStatus supercap_switch_status)
+inline void Supercap::SetSupercapCharge(SupercapSwitchStatus supercap_switch_status)
 {
     supercap_control_.control.supercap_switch = supercap_switch_status;
 }
@@ -241,7 +244,7 @@ inline void Supercap::SetSupercapSwitchStatus(SupercapSwitchStatus supercap_swit
  * 
  * @param supercap_record_status 记录状态值
  */
-inline void Supercap::SetSupercapRecordStatus(SupercapRecordStatus supercap_record_status)
+inline void Supercap::SetSupercapRecord(SupercapRecordStatus supercap_record_status)
 {
     supercap_control_.control.supercap_record = supercap_record_status;
 }

@@ -56,8 +56,8 @@ struct McuAutoaimData
 {
     uint8_t start_of_yaw_frame = 0xAC;
     uint8_t start_of_pitch_frame = 0xAD;
-    uint8_t autoaim_yaw[4];
-    uint8_t autoaim_pitch[4];
+    float autoaim_yaw;
+    float autoaim_pitch;
 };
 
 class McuComm
@@ -84,8 +84,8 @@ public:
     McuAutoaimData recv_autoaim_data_ = 
     {   0xAC,
         0xAD,
-        {0, 0, 0, 0},
-        {0, 0, 0, 0},
+        0,
+        0,
     };
 
     void Init(CAN_HandleTypeDef *hcan,

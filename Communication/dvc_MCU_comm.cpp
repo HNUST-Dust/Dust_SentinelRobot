@@ -99,7 +99,7 @@ void McuComm::CanRxCpltCallback(uint8_t* rx_data)
      {
           case (0xAA): // 底盘包
           {
-               recv_chassis_data_.start_of_frame       = rx_data[0];
+               // recv_chassis_data_.start_of_frame       = rx_data[0];
                recv_chassis_data_.chassis_speed_x      = rx_data[1] << 8 | rx_data[2];
                recv_chassis_data_.chassis_speed_y      = rx_data[3] << 8 | rx_data[4];
                recv_chassis_data_.rotation             = rx_data[5] << 8 | rx_data[6];
@@ -126,7 +126,7 @@ void McuComm::CanRxCpltCallback(uint8_t* rx_data)
           {
                union { float f; uint8_t b[4]; } conv;
 
-               recv_comm_data_.start_of_frame       = rx_data[0];
+               // recv_comm_data_.start_of_frame       = rx_data[0];
                recv_comm_data_.armor                = rx_data[1];
                recv_comm_data_.supercap             = rx_data[2];
 
@@ -150,18 +150,23 @@ void McuComm::CanRxCpltCallback(uint8_t* rx_data)
                conv.b[1]                           = rx_data[5];
                conv.b[2]                           = rx_data[6];
                conv.b[3]                           = rx_data[7];
+               
                recv_comm_data_.yaw_angle = conv.f;
 
                break;
           }
           case (0xAC): // 自瞄yaw包
           {
-               recv_autoaim_data_.start_of_yaw_frame = rx_data[0];
+               union { float f; uint8_t b[4]; } conv;
 
-               recv_autoaim_data_.autoaim_yaw[0]     = rx_data[1];
-               recv_autoaim_data_.autoaim_yaw[1]     = rx_data[2];
-               recv_autoaim_data_.autoaim_yaw[2]     = rx_data[3];
-               recv_autoaim_data_.autoaim_yaw[3]     = rx_data[4];
+               // recv_autoaim_data_.start_of_yaw_frame = rx_data[0];
+
+               conv.b[0]     = rx_data[1];
+               conv.b[1]     = rx_data[2];
+               conv.b[2]     = rx_data[3];
+               conv.b[3]     = rx_data[4];
+
+               recv_autoaim_data_.autoaim_yaw = conv.f;
 
                break;
           }

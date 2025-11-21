@@ -30,7 +30,7 @@ void Gimbal::Init()
     yaw_angle_pid_.Init(
         0.5f,
         0.05f,
-        0.013f,
+        0.0105f,
         0.0f,
         0.f,
         44.0f,
@@ -117,15 +117,6 @@ void Gimbal::TaskEntry(void *argument)
 }
 
 /**
- * @brief Gimbal退出函数
- * 
- */
-void Gimbal::Exit()
-{
-    motor_yaw_.SetControlTorque(0);
-}
-
-/**
  * @brief Gimbal自身解算函数
  *
  */
@@ -133,10 +124,12 @@ void Gimbal::SelfResolution()
 {
     // 获取当前数据
     now_yaw_omega_ = motor_yaw_.GetNowOmega();
-    now_yaw_angle_ = motor_yaw_.GetNowAngle();
+    now_yaw_angle_ = motor_yaw_.GetNowAngle() * 14.4;
 
     // 计算yaw轴偏差
-    yaw_angle_diff_ = CalcYawErrorAngle(imu_yaw_angle_, remote_yaw_angle_);
+    // yaw_angle_diff_ = CalcYawErrorAngle(imu_yaw_angle_, remote_yaw_angle_);
+    yaw_angle_diff_ = CalcYawErrorAngle(now_yaw_angle_, remote_yaw_angle_);
+
 
     // 角度环
     yaw_angle_pid_.SetTarget(0);
@@ -150,7 +143,7 @@ void Gimbal::SelfResolution()
     yaw_omega_pid_.CalculatePeriodElapsedCallback();
 
     // 设定目标力矩
-    SetTargetYawTorque(yaw_omega_pid_.GetOut());
+    // SetTargetYawTorque(yaw_omega_pid_.GetOut());
     // printf("%f,%f,%f\n", yaw_angle_diff_, yaw_angle_pid_.GetOut(), yaw_omega_pid_.GetOut());
 }
 

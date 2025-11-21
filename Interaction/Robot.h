@@ -16,6 +16,7 @@
 // alg
 #include "alg_pid.h"
 // bsp
+#include "dvc_remote_dji.h"
 #include "stdio.h"
 #include "bsp_dwt.h"
 // dvc
@@ -47,6 +48,8 @@ public:
     Imu imu_;
     // 超级电容
     Supercap supercap_;
+    // 临时遥控
+    RemoteDjiDR16 remote_;
 
     void Init();
 

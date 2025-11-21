@@ -11,7 +11,6 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include "Robot.h"
-#include "can.h"
 
 /* Private macros ------------------------------------------------------------*/
 
@@ -36,6 +35,8 @@ void Robot::Init()
     dwt_init(168);
     // 上下板通讯组件初始化
     mcu_comm_.Init(&hcan1, 0x01, 0x00);
+    // 临时遥控
+    remote_.Init(&huart3, uart3_callback_function, UART_BUFFER_LENGTH);
     // 云台初始化
     gimbal_.Init();
     // 底盘陀螺仪初始化
@@ -47,7 +48,7 @@ void Robot::Init()
     // 拨弹盘初始化
     reload_.Init();
     // 超级电容初始化 
-    // supercap_.Init(&hcan1);
+    supercap_.Init(&hcan1);
 
     static const osThreadAttr_t kRobotTaskAttr = 
     {
@@ -90,110 +91,216 @@ void Robot::Task()
     mcu_comm_data_local.switch_r               = Switch_MID;
     mcu_comm_data_local.yaw_angle              = 0;
 
+    McuAutoaimData mcu_autoaim_data_local;
+    mcu_autoaim_data_local.autoaim_yaw         = 0;
+
     // yaw角角度差，用于角度环
     float yaw_angle_diff = 0.0f;
     // 底盘yaw角角度差，用于底盘跟随
     float chassis_angle_diff = 0.0f;
 
+    uint32_t Counter = 0;
+
     for(;;)
     {
-        /****************************   通讯   ****************************/
+        // /****************************   通讯   ****************************/
 
 
-        // 用临界区一次性复制，避免撕裂
-        __disable_irq();
-        mcu_chassis_data_local = *const_cast<const McuChassisData*>(&(mcu_comm_.recv_chassis_data_));
-        mcu_comm_data_local = *const_cast<const McuCommData*>(&(mcu_comm_.recv_comm_data_));
-        __enable_irq();
+        // // 用临界区一次性复制，避免撕裂
+        // __disable_irq();
+        // mcu_chassis_data_local = *const_cast<const McuChassisData*>(&(mcu_comm_.recv_chassis_data_));
+        // mcu_autoaim_data_local = *const_cast<const McuAutoaimData*>(&(mcu_comm_.recv_autoaim_data_));
+        // mcu_comm_data_local = *const_cast<const McuCommData*>(&(mcu_comm_.recv_comm_data_));
+        // __enable_irq();
 
 
-        /****************************   云台   ****************************/
+        // /****************************   云台   ****************************/
 
 
-        // 遥控器累加绝对精准yaw轴角度
-        remote_yaw_angle_ += (mcu_chassis_data_local.rotation * K + C) * 1;
+        // // 遥控器累加绝对精准yaw轴角度
+        // // remote_yaw_angle_ += (mcu_chassis_data_local.rotation * K + C) * 1;
+        // remote_yaw_angle_ += (remote_.output_.rotation * K + C) * 1;
 
-        if(remote_yaw_angle_ >= 180.f){
-            remote_yaw_angle_ -= 360.f;
-        }else if(remote_yaw_angle_ <= -180.f){
-            remote_yaw_angle_ += 360.f;
-        }
-        gimbal_.SetRemoetYawAngle(remote_yaw_angle_);
-        gimbal_.SetImuYawAngle(mcu_comm_data_local.yaw_angle);
-
-
-        /****************************   底盘   ****************************/
-
-
-        // 设置当前角度差
-        chassis_.SetNowYawAngleDiff(normalize_angle(gimbal_.GetNowYawAngle() * 14.4f));
-        // 设置目标映射速度
-        chassis_.SetTargetVxInGimbal((mcu_chassis_data_local.chassis_speed_x * K + C) * MAX_OMEGA_SPEED);
-        chassis_.SetTargetVyInGimbal((mcu_chassis_data_local.chassis_speed_y * K + C) * MAX_OMEGA_SPEED);
+        // if(remote_yaw_angle_ >= 180.f){
+        //     remote_yaw_angle_ -= 360.f;
+        // }else if(remote_yaw_angle_ <= -180.f){
+        //     remote_yaw_angle_ += 360.f;
+        // }
+        
+        // if(mcu_comm_data_local.armor == 0){
+        //     gimbal_.SetRemoetYawAngle(remote_yaw_angle_);
+        // }else if(mcu_comm_data_local.armor == 1){
+        //     remote_yaw_angle_ +=  mcu_autoaim_data_local.autoaim_yaw;
+        //     gimbal_.SetRemoetYawAngle(remote_yaw_angle_);
+        // }
+        // gimbal_.SetImuYawAngle(mcu_comm_data_local.yaw_angle);
 
 
-        /****************************   模式   ****************************/
+        // /****************************   底盘   ****************************/
+
+
+        // // 设置当前角度差
+        // chassis_.SetNowYawAngleDiff(normalize_angle(gimbal_.GetNowYawAngle()));
+        // // 设置目标映射速度
+        // // chassis_.SetTargetVxInGimbal((mcu_chassis_data_local.chassis_speed_x * K + C) * MAX_OMEGA_SPEED);
+        // // chassis_.SetTargetVyInGimbal((mcu_chassis_data_local.chassis_speed_y * K + C) * MAX_OMEGA_SPEED);
+
+        // chassis_.SetTargetVxInGimbal((remote_.output_.chassis_x * K + C) * MAX_OMEGA_SPEED);
+        // chassis_.SetTargetVyInGimbal((remote_.output_.chassis_y * K + C) * MAX_OMEGA_SPEED);
+
+
+        // /****************************   模式   ****************************/
 
         
-        // 左按钮
-        switch (mcu_chassis_data_local.switch_l) 
-        {
-            case CHASSIS_SPIN_CLOCKWISE:
-            {
-                chassis_.SetTargetVelocityRotation(25);
-                break;
-            }
-            case CHASSIS_SPIN_DISABLE:
-            {
-                chassis_.SetTargetVelocityRotation(0);
-                break;
-            }
-            case CHASSIS_SPIN_COUNTER_CLOCK_WISE:
-            {
-                chassis_angle_diff = CalcYawErrorAngle(normalize_angle(remote_yaw_angle_) ,imu_.GetYawAngle());
+        // // 左按钮
+        // // switch (mcu_chassis_data_local.switch_l) 
+        // switch (remote_.output_.switch_l) 
+        // {
+        //     case CHASSIS_SPIN_CLOCKWISE:
+        //     {
+        //         chassis_.SetTargetVelocityRotation(25);
+        //         break;
+        //     }
+        //     case CHASSIS_SPIN_DISABLE:
+        //     {
+        //         chassis_.SetTargetVelocityRotation(0);
+        //         break;
+        //     }
+        //     case CHASSIS_SPIN_COUNTER_CLOCK_WISE:
+        //     {
+        //         chassis_angle_diff = CalcYawErrorAngle(normalize_angle(remote_yaw_angle_) ,imu_.GetYawAngle());
 
-                chassis_.chassis_follow_pid_.SetTarget(0);
-                chassis_.chassis_follow_pid_.SetNow(chassis_angle_diff);
-                chassis_.chassis_follow_pid_.CalculatePeriodElapsedCallback();
+        //         chassis_.chassis_follow_pid_.SetTarget(0);
+        //         chassis_.chassis_follow_pid_.SetNow(chassis_angle_diff);
+        //         chassis_.chassis_follow_pid_.CalculatePeriodElapsedCallback();
 
-                chassis_.SetTargetVelocityRotation(chassis_.chassis_follow_pid_.GetOut());
-                break;
-            }
-            default:
-            {
-                chassis_.SetTargetVelocityRotation(0);
-                gimbal_.SetTargetYawOmega(0);
-                break;
-            }
-        }
+        //         chassis_.SetTargetVelocityRotation(chassis_.chassis_follow_pid_.GetOut());
+        //         break;
+        //     }
+        //     default:
+        //     {
+        //         chassis_.SetTargetVelocityRotation(0);
+        //         gimbal_.SetTargetYawOmega(0);
+        //         break;
+        //     }
+        // }
         
-        // 右按钮
-        switch (mcu_comm_data_local.switch_r)
-        {
-            case Switch_UP:
-            {
-                reload_.SetTargetReloadRotation(MAX_RELOAD_SPEED);
-                break;
-            }
-            case Switch_MID:
-            {
-                reload_.SetTargetReloadRotation(0);
-                break;
-            }
-            case Switch_DOWN:
-            {
-                reload_.SetTargetReloadRotation(-MAX_RELOAD_SPEED / 2);
-                break;
-            }
-            default:
-            {
-                reload_.SetTargetReloadRotation(0);
-                break;
-            }
-        }
+        // // 右按钮
+        // // switch (mcu_comm_data_local.switch_r)
+        // switch (remote_.output_.switch_r)
+        // {
+        //     case Switch_UP:
+        //     {
+        //         reload_.SetTargetReloadRotation(MAX_RELOAD_SPEED);
+        //         break;
+        //     }
+        //     case Switch_MID:
+        //     {
+        //         reload_.SetTargetReloadRotation(0);
+        //         break;
+        //     }
+        //     case Switch_DOWN:
+        //     {
+        //         reload_.SetTargetReloadRotation(-MAX_RELOAD_SPEED / 2);
+        //         break;
+        //     }
+        //     default:
+        //     {
+        //         reload_.SetTargetReloadRotation(0);
+        //         break;
+        //     }
+        // }
 
 
         /****************************   调试   ****************************/
+
+
+        // if(){
+        //     supercap_.SetSupercapCharge(SUPERCAP_STATUS_SWITCH_ENABLE);
+        // }else if(){
+        //     supercap_.SetSupercapCharge(SUPERCAP_STATUS_SWITCH_DISABLE);
+        // }
+
+
+        /****************************   超电   ****************************/
+
+        Counter++;
+        if(Counter < 2000)
+        {
+            chassis_.motor_chassis_1_.SetControlMethod(MOTOR_DJI_CONTROL_METHOD_OMEGA);
+            chassis_.motor_chassis_1_.SetTargetOmega(-200.0f);
+        }
+        else if(Counter < 4000)
+        {
+            chassis_.motor_chassis_1_.SetControlMethod(MOTOR_DJI_CONTROL_METHOD_OMEGA);
+            chassis_.motor_chassis_1_.SetTargetOmega(-100.0f);
+        }
+        else if(Counter < 6000)
+        {
+            chassis_.motor_chassis_1_.SetControlMethod(MOTOR_DJI_CONTROL_METHOD_OMEGA);
+            chassis_.motor_chassis_1_.SetTargetOmega(-50.0f);
+        }
+        else if(Counter < 8000)
+        {
+            chassis_.motor_chassis_1_.SetControlMethod(MOTOR_DJI_CONTROL_METHOD_OMEGA);
+            chassis_.motor_chassis_1_.SetTargetOmega(-20.0f);
+        }
+        else if(Counter < 10000)
+        {
+            chassis_.motor_chassis_1_.SetControlMethod(MOTOR_DJI_CONTROL_METHOD_OMEGA);
+            chassis_.motor_chassis_1_.SetTargetOmega(-10.0f);
+        }
+        else if(Counter < 12000)
+        {
+            chassis_.motor_chassis_1_.SetControlMethod(MOTOR_DJI_CONTROL_METHOD_OMEGA);
+            chassis_.motor_chassis_1_.SetTargetOmega(0.0f);
+        }
+        else if(Counter < 14000)
+        {
+            chassis_.motor_chassis_1_.SetControlMethod(MOTOR_DJI_CONTROL_METHOD_OMEGA);
+            chassis_.motor_chassis_1_.SetTargetOmega(10.0f);
+        }
+        else if(Counter < 16000)
+        {
+            chassis_.motor_chassis_1_.SetControlMethod(MOTOR_DJI_CONTROL_METHOD_OMEGA);
+            chassis_.motor_chassis_1_.SetTargetOmega(20.0f);
+        }
+        else if(Counter < 18000)
+        {
+            chassis_.motor_chassis_1_.SetControlMethod(MOTOR_DJI_CONTROL_METHOD_OMEGA);
+            chassis_.motor_chassis_1_.SetTargetOmega(50.0f);
+        }
+        else if(Counter < 20000)
+        {
+            chassis_.motor_chassis_1_.SetControlMethod(MOTOR_DJI_CONTROL_METHOD_OMEGA);
+            chassis_.motor_chassis_1_.SetTargetOmega(100.0f);
+        }
+        else if(Counter < 22000)
+        {
+            chassis_.motor_chassis_1_.SetControlMethod(MOTOR_DJI_CONTROL_METHOD_OMEGA);
+            chassis_.motor_chassis_1_.SetTargetOmega(200.0f);
+        }
+        else if(Counter < 26000)
+        {
+            chassis_.motor_chassis_1_.SetControlMethod(MOTOR_DJI_CONTROL_METHOD_CURRENT);
+            chassis_.motor_chassis_1_.SetTargetCurrent(1.0f * sinf(10.0f * PI * (Counter - 22000) / 1000.0f));
+        }
+        else if(Counter < 30000)
+        {
+            chassis_.motor_chassis_1_.SetControlMethod(MOTOR_DJI_CONTROL_METHOD_CURRENT);
+            chassis_.motor_chassis_1_.SetTargetCurrent(2.0f * sinf(10.0f * PI * (Counter - 22000) / 1000.0f));
+        }
+        else if(Counter < 34000)
+        {
+            chassis_.motor_chassis_1_.SetControlMethod(MOTOR_DJI_CONTROL_METHOD_CURRENT);
+            chassis_.motor_chassis_1_.SetTargetCurrent(5.0f * sinf(10.0f * PI * (Counter - 22000) / 1000.0f));
+        }
+
+        // if(Counter % 10 == 0)
+        // {
+        //     printf("%f,%f,%f\n", supercap_.chassis_power_, chassis_.motor_chassis_1_.GetNowOmega(), chassis_.motor_chassis_1_.GetNowCurrent());
+        // }
+        printf("%f,%f,%f\n", supercap_.chassis_power_, chassis_.motor_chassis_1_.GetNowOmega(), chassis_.motor_chassis_1_.GetNowCurrent());
         
         osDelay(pdMS_TO_TICKS(1));
     }

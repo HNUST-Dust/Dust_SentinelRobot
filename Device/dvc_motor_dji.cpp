@@ -27,18 +27,20 @@
 
 /**
  * @brief 估计功率值
- *
- * @param k_0 电机建模系数
- * @param k_1 电机建模系数
- * @param k_2 电机建模系数
- * @param A 电机建模系数
- * @param current 电流
- * @param omega 角速度
- * @return
+ * 
+ * @param k0 电机建模系数
+ * @param k1 电机建模系数
+ * @param k2 电机建模系数
+ * @param k3 电机建模系数
+ * @param k4 电机建模系数
+ * @param k5 电机建模系数
+ * @param I 电流值
+ * @param W 转速值
+ * @return float 估计功率值
  */
-float power_calculate(float k_0, float k_1, float k_2, float A, float current, float omega)
+float power_calculate(float k0, float k1, float k2, float k3, float k4, float k5,  float I, float W)
 {
-    return (k_0 * current * omega + k_1 * omega * omega + k_2 * current * current + A);
+    return (k0 + k1*I + k2*W + k3*I*W + k4*I*I + k5*W*W);
 }
 
 /**
@@ -481,13 +483,13 @@ void MotorDjiC620::CalculatePeriodElapsedCallback()
     out_ = tmp_value * current_to_out_;
 
     // 计算功率估计值
-    power_estimate_ = power_calculate(
-                        power_k_0_, 
-                        power_k_1_, 
-                        power_k_2_, 
-                        power_A_, 
-                        target_current_, 
-                        rx_data_.now_omega / gearbox_rate_);
+    // power_estimate_ = power_calculate(
+    //                     power_k_0_, 
+    //                     power_k_1_, 
+    //                     power_k_2_, 
+    //                     power_A_, 
+    //                     target_current_, 
+    //                     rx_data_.now_omega / gearbox_rate_);
 
     Output();
 
@@ -555,13 +557,13 @@ void MotorDjiC620::DataProcess()
     rx_data_.now_omega = (float) tmp_omega * RPM_TO_RADPS / gearbox_rate_;
     rx_data_.now_current = tmp_current / current_to_out_;
     rx_data_.now_temperature = tmp_buffer->temperature + CELSIUS_TO_KELVIN;
-    rx_data_.now_power = power_calculate(
-                            power_k_0_, 
-                            power_k_1_, 
-                            power_k_2_, 
-                            power_A_, 
-                            rx_data_.now_current, 
-                            rx_data_.now_omega * gearbox_rate_);
+    // rx_data_.now_power = power_calculate(
+    //                         power_k_0_, 
+    //                         power_k_1_, 
+    //                         power_k_2_, 
+    //                         power_A_, 
+    //                         rx_data_.now_current, 
+    //                         rx_data_.now_omega * gearbox_rate_);
 
     // 存储预备信息
     rx_data_.pre_encoder = tmp_encoder;
